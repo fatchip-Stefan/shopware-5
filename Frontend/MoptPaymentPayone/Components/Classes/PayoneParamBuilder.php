@@ -476,8 +476,9 @@ class Mopt_PayoneParamBuilder
             }
         }
 
-        $params['gender'] = ($billingAddress['salutation'] === 'mr') ? 'm' : 'f';
-        $params['salutation'] = ($billingAddress['salutation'] === 'mr') ? 'Herr' : 'Frau';
+
+        $params['gender'] = $this->getGenderFromSalutation($billingAddress['salutation']);
+        $params['salutation'] = $this->getSalutationFromSalutation($billingAddress['salutation']);
         if ($userData['additional']['user']['birthday'] !== '0000-00-00') {
             $params['birthday'] = str_replace('-', '', $userData['additional']['user']['birthday']); //YYYYMMDD
         }
@@ -490,6 +491,43 @@ class Mopt_PayoneParamBuilder
 
         return $personalData;
     }
+
+    protected function getGenderFromSalutation($swSalutation)
+    {
+        switch ($swSalutation) {
+            case 'mr':
+                $gender = 'm';
+                break;
+            case 'ms':
+                $gender = 'f';
+                break;
+            case 'mx':
+                $gender = 'd';
+                break;
+            default:
+                $gender = 'd';
+        }
+        return $gender;
+    }
+
+    protected function getSalutationFromSalutation($swSalutation)
+    {
+        switch ($swSalutation) {
+            case 'mr':
+                $salutation = Shopware()->Snippets()->getNamespace('frontend/salutation')->get($swSalutation, 'Herr');
+                break;
+            case 'ms':
+                $salutation = Shopware()->Snippets()->getNamespace('frontend/salutation')->get($swSalutation, 'Frau');
+                break;
+            case 'mx':
+                $salutation = Shopware()->Snippets()->getNamespace('frontend/salutation')->get($swSalutation, 'Hi');
+                break;
+            default:
+                $salutation = Shopware()->Snippets()->getNamespace('frontend/salutation')->get($swSalutation, 'Hi');
+        }
+        return $salutation;
+    }
+
 
     /**
      * build parameters for payment
