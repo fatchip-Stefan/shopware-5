@@ -8,6 +8,7 @@ namespace Shopware\CustomModels\MoptPayonePaypal;
 
 use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Models\Shop\Shop;
 
 /**
  * @ORM\Entity(repositoryClass="Repository")
@@ -24,6 +25,19 @@ class MoptPayonePaypal extends ModelEntity
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $id;
+
+    /**
+     * @var integer $shopId
+     * @ORM\Column(name="shop_id", type="integer", unique=true)
+     */
+    protected $shopId;
+
+    /**
+     * @var Shop $shop
+     * @ORM\ManyToOne(targetEntity="Shopware\Models\Shop\Shop")
+     * @ORM\JoinColumn(name="shop_id", referencedColumnName="id")
+     */
+    private $shop;
 
     /**
      * @var
@@ -152,5 +166,15 @@ class MoptPayonePaypal extends ModelEntity
     public function setPackStationMode($packStationMode)
     {
         $this->packStationMode = $packStationMode;
+    }
+
+    public function getShop()
+    {
+        return $this->shop;
+    }
+
+    public function setShop(\Shopware\Models\Shop\Shop $shop)
+    {
+        $this->shop = $shop;
     }
 }

@@ -21,9 +21,14 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.detail.Button', {
         return {
             controller: 'MoptPayonePaypal',
             fieldSets: [{
-                title: '{s name=details/title}Payone PayPal Button-Details{/s}',
+                title: '{s name=details/title}Payone PayPal Express Button-Details{/s}',
                 layout: 'fit',
                 fields: {
+                    shopId: {
+                        fieldLabel: '{s name=shop}Shop{/s}',
+                        name: 'shopId',
+                        allowBlank: false
+                    },
                     localeId: {
                         fieldLabel: '{s name=language}Sprache{/s}',
                         name: 'localeId',
