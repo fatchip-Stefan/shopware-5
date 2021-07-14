@@ -453,6 +453,17 @@ class Mopt_PayonePaymentHelper
     }
 
     /**
+     * check if given payment name is payone paypal payment
+     *
+     * @param string $paymentName
+     * @return boolean
+     */
+    public function isPayonePaypalExpress($paymentName)
+    {
+        return preg_match('#mopt_payone__ewallet_paypal_express#', $paymentName) ? true : false;
+    }
+
+    /**
      * check if given payment name is payone paydirekt payment
      *
      * @param string $paymentName
@@ -1222,6 +1233,10 @@ class Mopt_PayonePaymentHelper
             return 'instanttransfer';
         }
 
+        if ($this->isPayonePaypalExpress($paymentShortName)) {
+            return 'paypalexpress';
+        }
+
         if ($this->isPayonePaypal($paymentShortName)) {
             return 'paypal';
         }
@@ -1321,7 +1336,7 @@ class Mopt_PayonePaymentHelper
      */
     public function isPayPalEcsActive($payoneMain, $paymentMethod)
     {
-        if (!$this->isPayonePaypal($paymentMethod['name'])) {
+        if (!$this->isPayonePaypalExpress($paymentMethod['name'])) {
             return false;
         }
 
@@ -1493,19 +1508,6 @@ class Mopt_PayonePaymentHelper
             'mopt_payone__fin_kiv_klarna_invoice' => Payone_Api_Enum_FinancingType::KIV,
             'mopt_payone__fin_kdd_klarna_direct_debit' => Payone_Api_Enum_FinancingType::KDD,
         ];
-    }
-
-    /**
-     * Fetches and returns amazon payment instance.
-     *
-     * @return \Shopware\Models\Payment\Payment
-     */
-    public function getPaymentPaydirektExpress()
-    {
-        $paymentPaydirektexpress = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            ['name' => 'mopt_payone__ewallet_paydirekt_express']
-        );
-        return $paymentPaydirektexpress;
     }
 
     /**

@@ -102,7 +102,8 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $response = $service->request($request);
         
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::OK) {
-            $session = Shopware()->Session();
+            $payData = $response->getPaydata()->toAssocArray();
+            $test = $this->isBillingAddressSupported($payData['country'], $paymentId);
             $session->offsetSet('moptFormSubmitted', true);
             $this->createrOrUpdateAndForwardUser($response, $paymentId, $session);
         } elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
@@ -110,6 +111,21 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             $this->redirect($response->getRedirecturl());
         } else {
             return $this->forward('ecsAbort');
+        }
+    }
+
+    protected function isBillingAddressSupported($country, $paymentId){
+        $countries = $this->moptPayone__main->getPaymentHelper()
+            ->moptGetCountriesAssignedToPayment($paymentId);
+
+        if (count($countries) == 0){
+            return true;
+        }
+
+        if (in_array($country, array_column($countries, 'countryiso'))) {
+            return true;
+        } else {
+            return false;
         }
     }
 
