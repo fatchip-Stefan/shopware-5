@@ -444,18 +444,22 @@ class FrontendCheckout implements SubscriberInterface
         /** @var ShopContextInterface $context */
         $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
         $shopId = $context->getShop()->getId();
+        unset(Shopware()->Session()->moptPaypayEcsPaymentId);
 
         /** @var Repository $paymentRepository */
         $paymentRepository = Shopware()->Models()->getRepository(\Shopware\Models\Payment\Payment::class);
 
         $builder = $paymentRepository->getListQueryBuilder();
-        $builder->addFilter(['payment.active' => 1, 'shops.id' => $shopId]);
+        $builder->addFilter(['payment.name' => '%mopt_payone__ewallet_paypal_express%', 'payment.active' => 1, 'shops.id' => $shopId]);
         $query = $builder->getQuery();
         $test = $query->execute();
 
         $payoneMain = $this->container->get('MoptPayoneMain');
 
         if ($payoneMain->getHelper()->isAboCommerceArticleInBasket()) {
+            return false;
+        }
+        if (empty($test)) {
             return false;
         }
 
