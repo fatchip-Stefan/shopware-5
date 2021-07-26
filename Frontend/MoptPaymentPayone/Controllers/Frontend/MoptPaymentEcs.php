@@ -32,7 +32,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
         $userData = $this->getUserData();
         $amount = $this->getBasketAmount($userData);
-        
+
         $expressCheckoutRequestData = $paramBuilder->buildPayPalExpressCheckout(
             $paymentId,
             $this->Front()->Router(),
@@ -78,10 +78,10 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $session = Shopware()->Session();
         $paymentId = $session->moptPaypayEcsPaymentId;
         $paramBuilder = $this->moptPayone__main->getParamBuilder();
-        
+
         $userData = $this->getUserData();
         $amount = $this->getBasketAmount($userData);
-        
+
         $expressCheckoutRequestData = $paramBuilder->buildPayPalExpressCheckoutDetails(
             $paymentId,
             $this->Front()->Router(),
@@ -98,12 +98,47 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $service->getServiceProtocol()->addRepository(Shopware()->Models()->getRepository(
             'Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'
         ));
-        
+
         $response = $service->request($request);
-        
+
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::OK) {
             $payData = $response->getPaydata()->toAssocArray();
-            $test = $this->isBillingAddressSupported($payData['country'], $paymentId);
+
+            // Check if PPE Billing Country is enabled in backend country config
+            if (!$this->isBillingCountryAllowed($payData['country'])) {
+                $session = Shopware()->Session();
+                $session->moptPayPalEcsError = true;
+                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land der Rechungsadresse wird in diesem Shop nicht unterstützt';
+                $session->moptPayPalEcsErrorName = 'paypalexpressBillingCountryNotSupported';
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+            }
+
+            // Check if PPE Shipping Country is allowed in backend country config
+            if (!$this->isShippingCountryAllowed($payData['country'])) {
+                $session = Shopware()->Session();
+                $session->moptPayPalEcsError = true;
+                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land derLieferadresse wird in diesem Shop nicht unterstützt';
+                $session->moptPayPalEcsErrorName = 'paypalexpressShippingCountryNotSupported';
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+            }
+            // Check if PPE Shipping Country is assigned to PPE
+            if (!$this->isShippingCountryAssignedToPayment($payData['shipping_country'], $paymentId)) {
+                $session = Shopware()->Session();
+                $session->moptPayPalEcsError = true;
+                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land der Lieferadresse wird in diesem Shop nicht unterstützt';
+                $session->moptPayPalEcsErrorName = 'paypalexpressShippingCountryNotSupported';
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+            }
+
+            // Check if PPE Shipping Country is assigned to PPE
+            if (!$this->isPaymentAssignedToSubshop($paymentId, $this->container->get('shop')->getId())) {
+                $session = Shopware()->Session();
+                $session->moptPayPalEcsError = true;
+                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land der Lieferadresse wird in diesem Shop nicht unterstützt';
+                $session->moptPayPalEcsErrorName = 'paypalexpressShippingCountryNotSupported';
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+            }
+
             $session->offsetSet('moptFormSubmitted', true);
             $this->createrOrUpdateAndForwardUser($response, $paymentId, $session);
         } elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
@@ -114,11 +149,32 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         }
     }
 
-    protected function isBillingAddressSupported($country, $paymentId){
+    /**
+     * @param $country
+     * @return bool
+     */
+    protected function isBillingCountryAllowed($country)
+    {
+        $country = $this->moptPayone__main->getPaymentHelper()->getCountryIdFromIso($country);
+        return $country->getActive();
+    }
+
+    /**
+     * @param $country
+     * @return bool
+     */
+    protected function isShippingCountryAllowed($country)
+    {
+        $country = $this->moptPayone__main->getPaymentHelper()->getCountryIdFromIso($country);
+        return $country->getAllowShipping();
+    }
+
+    protected function isBillingAddressSupported($country, $paymentId)
+    {
         $countries = $this->moptPayone__main->getPaymentHelper()
             ->moptGetCountriesAssignedToPayment($paymentId);
 
-        if (count($countries) == 0){
+        if (count($countries) == 0) {
             return true;
         }
 
@@ -129,10 +185,43 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         }
     }
 
+    /**
+     * @param $country
+     * @param $paymentId
+     * @return bool
+     */
+    protected function isShippingCountryAssignedToPayment($country, $paymentId)
+    {
+        $countries = $this->moptPayone__main->getPaymentHelper()
+            ->moptGetCountriesAssignedToPayment($paymentId);
+
+        if (count($countries) == 0) {
+            return true;
+        }
+
+        if (in_array($country, array_column($countries, 'countryiso'))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @param $paymentId
+     * @param $subshopID
+     * @return bool
+     */
+    protected function isPaymentAssignedToSubshop($paymentId, $subshopID)
+    {
+        return $this->moptPayone__main->getPaymentHelper()->isPaymentAssignedToSubshop($paymentId, $subshopID);
+    }
+
     public function ecsAbortAction()
     {
         $session = Shopware()->Session();
         $session->moptPayPalEcsError = true;
+        $session->moptPayPalEcsErrorMessage = 'Sie haben den Zahlungsvorgang abgebrochen';
+        $session->moptPayPalEcsErrorName = 'errorMessageUserAbort';
         unset($session->moptPaypalEcsWorkerId);
 
         return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
@@ -190,7 +279,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
     protected function getBasketAmount($userData)
     {
         $basket = $this->moptPayone__main->sGetBasket();
-        
+
         if (empty($userData['additional']['charge_vat'])) {
             return $basket['AmountNetNumeric'];
         }
@@ -229,7 +318,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
      */
     protected function isUserLoggedIn($session)
     {
-         return (isset($session->sUserId) && !empty($session->sUserId));
+        return (isset($session->sUserId) && !empty($session->sUserId));
     }
 
     /**
@@ -242,12 +331,12 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
         $session['sRegister'] = $register;
         $session['sRegisterFinished'] = false;
-        
-        $newdata = $this->saveUser($register,$paymentId);
+
+        $newdata = $this->saveUser($register, $paymentId);
         $this->admin->sSYSTEM->_POST = $newdata['auth'];
         $this->admin->sLogin(true);
     }
-  
+
     protected function updateUserAddresses($personalData, $session, $paymentId)
     {
         $personalData = $this->extractData($personalData);
@@ -263,11 +352,11 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $updated = $this->updateShippingAddress($personalData, $session);
         if (!$updated) {
             return null;
-        }        
+        }
         $this->updateCustomer($personalData, $paymentId);
         return $personalData;
     }
-  
+
     protected function updateBillingAddress($personalData, $session)
     {
         $userId = $session->offsetGet('sUserId');
@@ -276,11 +365,11 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         foreach ($countryData as $key => $country) {
             $countryIds[$key] = $country['id'];
         }
-        $this->admin->sSYSTEM->_POST  = $personalData['billing'];
+        $this->admin->sSYSTEM->_POST = $personalData['billing'];
         $this->updateBilling($userId, $personalData['billing']);
         return true;
     }
-  
+
     protected function updateShippingAddress($personalData, $session)
     {
         $userId = $session->offsetGet('sUserId');
@@ -288,13 +377,13 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $this->updateShipping($userId, $personalData['billing']);
         return true;
     }
-  
-  /**
-   * get user-data as array from response
-   *
-   * @param array $personalData
-   * @return array
-   */
+
+    /**
+     * get user-data as array from response
+     *
+     * @param array $personalData
+     * @return array
+     */
     protected function extractData($personalData)
     {
         // uncomment to simulate missing paypal phone number
@@ -302,56 +391,56 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $isPhoneMandatory = Shopware()->Config()->get('requirePhoneField');
 
         $register = array();
-        $register['billing']['city']           = $personalData['shipping_city'];
-        $register['billing']['country']        = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
+        $register['billing']['city'] = $personalData['shipping_city'];
+        $register['billing']['country'] = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
         if ($personalData['shipping_state'] !== 'Empty') {
-            $register['billing']['state']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['shipping_state'], true);
+            $register['billing']['state'] = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['shipping_state'], true);
         }
-        $register['billing']['street']         = $personalData['shipping_street'];
+        $register['billing']['street'] = $personalData['shipping_street'];
         $register['billing']['additionalAddressLine1'] = $personalData['shipping_addressaddition'];
-        $register['billing']['zipcode']        = $personalData['shipping_zip'];
-        $register['billing']['firstname']      = $personalData['shipping_firstname'];
-        $register['billing']['lastname']       = $personalData['shipping_lastname'];
-        $register['billing']['salutation']     = 'mr';
+        $register['billing']['zipcode'] = $personalData['shipping_zip'];
+        $register['billing']['firstname'] = $personalData['shipping_firstname'];
+        $register['billing']['lastname'] = $personalData['shipping_lastname'];
+        $register['billing']['salutation'] = 'mr';
         if (isset($personalData['shipping_company']) && !empty($personalData['shipping_company'])) {
-            $register['billing']['company']        = $personalData['shipping_company'];
+            $register['billing']['company'] = $personalData['shipping_company'];
         } else {
-            $register['billing']['company']        = '';
+            $register['billing']['company'] = '';
             $register['personal']['customer_type'] = 'private';
         }
 
         if ($isPhoneMandatory) {
-            $register['billing']['phone'] = (isset($personalData['telephonenumber']) && !empty($personalData['telephonenumber'])) ? $personalData['telephonenumber'] : '00000000' ;
+            $register['billing']['phone'] = (isset($personalData['telephonenumber']) && !empty($personalData['telephonenumber'])) ? $personalData['telephonenumber'] : '00000000';
         } else {
             $register['billing']['phone'] = $personalData['telephonenumber'];
         }
 
-        $register['personal']['email']         = $personalData['email'];
-        $register['personal']['firstname']     = $personalData['shipping_firstname'];
-        $register['personal']['lastname']      = $personalData['shipping_lastname'];
-        $register['personal']['salutation']    = 'mr';
-        $register['personal']['skipLogin']     = 1;
-        $register['shipping']['salutation']   = 'mr';
-        $register['shipping']['firstname']    = $register['billing']['firstname'];
-        $register['shipping']['lastname']     = $register['billing']['lastname'];
-        $register['shipping']['street']       = $register['billing']['street'];
+        $register['personal']['email'] = $personalData['email'];
+        $register['personal']['firstname'] = $personalData['shipping_firstname'];
+        $register['personal']['lastname'] = $personalData['shipping_lastname'];
+        $register['personal']['salutation'] = 'mr';
+        $register['personal']['skipLogin'] = 1;
+        $register['shipping']['salutation'] = 'mr';
+        $register['shipping']['firstname'] = $register['billing']['firstname'];
+        $register['shipping']['lastname'] = $register['billing']['lastname'];
+        $register['shipping']['street'] = $register['billing']['street'];
         $register['shipping']['additionalAddressLine1'] = $personalData['shipping_addressaddition'];
-        $register['shipping']['zipcode']      = $register['billing']['zipcode'];
-        $register['shipping']['city']         = $register['billing']['city'];
-        $register['shipping']['country']      = $register['billing']['country'];
-        $register['shipping']['phone']        = $register['billing']['phone'];
+        $register['shipping']['zipcode'] = $register['billing']['zipcode'];
+        $register['shipping']['city'] = $register['billing']['city'];
+        $register['shipping']['country'] = $register['billing']['country'];
+        $register['shipping']['phone'] = $register['billing']['phone'];
         if ($personalData['shipping_state'] !== 'Empty') {
-            $register['shipping']['state']  = $register['billing']['state'];
+            $register['shipping']['state'] = $register['billing']['state'];
         }
-        $register['shipping']['company']      = $register['billing']['company'];
-        $register['shipping']['department']   = '';
-        $register['auth']['email']            = $personalData['email'];
-        $register['auth']['password']         = md5(uniqid('', true));
-        $register['auth']['accountmode']      = 1;
-        $register['auth']['encoderName']      = '';
+        $register['shipping']['company'] = $register['billing']['company'];
+        $register['shipping']['department'] = '';
+        $register['auth']['email'] = $personalData['email'];
+        $register['auth']['password'] = md5(uniqid('', true));
+        $register['auth']['accountmode'] = 1;
+        $register['auth']['encoderName'] = '';
         return $register;
     }
-    
+
     /**
      * Saves a new user to the system.
      *
@@ -371,7 +460,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $form = $this->createForm('Shopware\Bundle\AccountBundle\Form\Account\AddressFormType', $address);
         $form->submit($plain);
 
-        
+
         /** @var Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface $context */
         $context = $this->get('shopware_storefront.context_service')->getShopContext();
 
@@ -384,19 +473,19 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
         // get updated password; it is md5 randomized after register
         // make sure user is the last created user in case of already registered email addresses
-	    $getUser = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->findOneBy(
-		    array('email' =>  $data['auth']['email']), array('lastLogin' => 'DESC')
-		);
+        $getUser = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->findOneBy(
+            array('email' => $data['auth']['email']), array('lastLogin' => 'DESC')
+        );
         // Update PaymentId 
         $getUser->setPaymentId($paymentId);
         Shopware()->Models()->persist($getUser);
         Shopware()->Models()->flush();
-        
 
-       $data['auth']['password']= $getUser->getPassword();
-       $data['auth']['passwordMD5']= $getUser->getPassword();
-       $data['auth']['encoderName'] = 'md5';
-       return $data;
+
+        $data['auth']['password'] = $getUser->getPassword();
+        $data['auth']['passwordMD5'] = $getUser->getPassword();
+        $data['auth']['encoderName'] = 'md5';
+        return $data;
     }
 
     /**
@@ -415,17 +504,17 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
         /** @var \Shopware\Models\Customer\Address $address */
         $address = $customer->getDefaultBillingAddress();
-        
-         /** @var \Shopware\Models\Country\Country $country */
-        $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $billingData['country'] ));
-        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $billingData['state'] ));
+
+        /** @var \Shopware\Models\Country\Country $country */
+        $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $billingData['country']));
+        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $billingData['state']));
         $billingData['country'] = $country;
         $billingData['state'] = $countryState;
         $address->fromArray($billingData);
 
         $this->get('shopware_account.address_service')->update($address);
     }
-    
+
     /**
      * Updates the shipping address
      *
@@ -442,30 +531,30 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
         /** @var \Shopware\Models\Customer\Address $address */
         $address = $customer->getDefaultShippingAddress();
-        
-         /** @var \Shopware\Models\Country\Country $country */
-        $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $shippingData['country'] ));
-        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $shippingData['state'] ));
+
+        /** @var \Shopware\Models\Country\Country $country */
+        $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $shippingData['country']));
+        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $shippingData['state']));
         $shippingData['country'] = $country;
         $shippingData['state'] = $countryState;
         $address->fromArray($shippingData);
 
         $this->get('shopware_account.address_service')->update($address);
-    } 
-    
+    }
+
     /**
      * Endpoint for changing the main profile data
      */
     public function updateCustomer($data, $paymentId)
     {
         unset ($data['shipping']);
-        unset ($data['billing']);        
-        
+        unset ($data['billing']);
+
         $userId = $this->get('session')->get('sUserId');
 
         $customer = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->findOneBy(
-		array('id' =>  $userId)
-		);
+            array('id' => $userId)
+        );
         $customer->fromArray($data);
         $customer->setPaymentId($paymentId);
         Shopware()->Container()->get('shopware_account.customer_service')->update($customer);

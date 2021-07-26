@@ -198,6 +198,7 @@ class FrontendCheckout implements SubscriberInterface
         //check if payment method is PayPal ecs
         /** @var Mopt_PayonePaymentHelper $helper */
         $helper = $this->container->get('MoptPayoneMain')->getPaymentHelper();
+        /* TODO Chck if neccessary for new PAypal ECS
         if (strpos($helper->getPaymentNameFromId($userPaymentId),'mopt_payone__ewallet_paypal_express') === 0) {
             if (!$this->isShippingAddressSupported($orderVars['sUserData']['shippingaddress'])) {
                 $view->assign('invalidShippingAddress', true);
@@ -205,6 +206,7 @@ class FrontendCheckout implements SubscriberInterface
                     ->get('packStationError', 'Die Lieferung an eine Packstation ist mit dieser Zahlungsart leider nicht möglich', true));
             }
         }
+        */
 
         $router = $this->container->get('router');
 
@@ -324,9 +326,13 @@ class FrontendCheckout implements SubscriberInterface
 
         if ($request->getActionName() === 'cart') {
             if ($session->moptPayPalEcsError) {
+                $message = $session->moptPayPalEcsErrorMessage;
+                $name = $session->moptPayPalEcsErrorName;
                 unset($session->moptPayPalEcsError);
+                unset($session->moptPayPalEcsErrorMessage);
+                unset($session->moptPayPalEcsErrorName);
                 $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get('generalErrorMessage', 'Es ist ein Fehler aufgetreten', true));
+                    ->get($name, $message, true));
             }
             if ($session->moptPaydirektExpressError) {
                 unset($session->moptPayDirektExpressError);
@@ -390,7 +396,6 @@ class FrontendCheckout implements SubscriberInterface
 
         }
 
-
         if ($templateSuffix === '' && $this->isPaydirektExpressActive($subject) && ($imageUrl = $this->moptPayonePaydirektShortcutImgURL())) {
             $view->assign('moptPayDirektShortcutImgURL', $imageUrl);
             $view->extendsTemplate('frontend/checkout/mopt_cart_paydirekt' . $templateSuffix . '.tpl');
@@ -441,20 +446,17 @@ class FrontendCheckout implements SubscriberInterface
 
     protected function isPayPalEcsActive($checkoutController)
     {
-        /** @var ShopContextInterface $context */
-        $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
-        $shopId = $context->getShop()->getId();
-        unset(Shopware()->Session()->moptPaypayEcsPaymentId);
+        $shop = $this->container->get('shop');
+        $payoneMain = $this->container->get('MoptPayoneMain');
 
+        unset(Shopware()->Session()->moptPaypayEcsPaymentId);
         /** @var Repository $paymentRepository */
         $paymentRepository = Shopware()->Models()->getRepository(\Shopware\Models\Payment\Payment::class);
 
         $builder = $paymentRepository->getListQueryBuilder();
-        $builder->addFilter(['payment.name' => '%mopt_payone__ewallet_paypal_express%', 'payment.active' => 1, 'shops.id' => $shopId]);
+        $builder->addFilter(['payment.name' => '%mopt_payone__ewallet_paypal_express%', 'payment.active' => 1]);
         $query = $builder->getQuery();
         $test = $query->execute();
-
-        $payoneMain = $this->container->get('MoptPayoneMain');
 
         if ($payoneMain->getHelper()->isAboCommerceArticleInBasket()) {
             return false;
@@ -463,9 +465,11 @@ class FrontendCheckout implements SubscriberInterface
             return false;
         }
 
-        if ($test[0]->getId()) {
-            Shopware()->Session()->moptPaypayEcsPaymentId = $test[0]->getId();
-            return true;
+        foreach ($test AS $payment) {
+            if ($payoneMain->getPaymentHelper()->isPaymentAssignedToSubshop($payment->getId(), $shop->getId())) {
+                Shopware()->Session()->moptPaypayEcsPaymentId = $payment->getId();
+                return true;
+            }
         }
 
         return false;

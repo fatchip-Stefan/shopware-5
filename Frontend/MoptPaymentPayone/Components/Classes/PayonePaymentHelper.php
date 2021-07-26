@@ -876,9 +876,37 @@ class Mopt_PayonePaymentHelper
         return $paymentCountries;
     }
 
+    public function isPaymentAssignedToSubshop($paymentId, $subshopID)
+    {
+        $sql = 'SELECT subshopID '
+            . 'FROM s_core_paymentmeans_subshops '
+            . 'WHERE s_core_paymentmeans_subshops.paymentID = ?;'
+        ;
+        $assignedShops = Shopware()->Db()->fetchAll($sql, $paymentId);
+
+        // paymentID was not found = no restrictions
+        if (count($assignedShops) == 0) {
+            return true;
+        }
+
+        if (in_array($subshopID, array_column('subshopID', $assignedShops))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getCountryIdFromIso($countryIso)
+    {
+        /** @var  $entityManager \Shopware\Components\Model\ModelManager*/
+        $entityManager = Shopware()->Container()->get('models');
+        $country = $entityManager->getRepository('Shopware\Models\Country\Country')->findOneBy(array('iso' => $countryIso));
+        return $country;
+    }
+
     public function moptGetShippingCountriesAssignedToPayment($paymentId)
     {
-        $sql = 'SELECT s_premium_dispatch_countries.countryID, s_core_countries.countryname, s_core_countries.countryiso '
+        $sql = 'SELECT s_premium_dispatch_countries.*, s_core_countries.*, s_core_countries.* '
             . 'FROM s_premium_dispatch_countries, s_core_countries, s_premium_dispatch_paymentmeans '
             . 'WHERE s_premium_dispatch_countries.countryID = s_core_countries.id AND s_premium_dispatch_paymentmeans.paymentID = ? '
             . 'AND s_premium_dispatch_paymentmeans.dispatchID = s_premium_dispatch_countries.dispatchID;';
