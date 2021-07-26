@@ -1883,7 +1883,28 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
 
             $sql = "UPDATE s_plugin_mopt_payone_paypal SET shop_id = 1;";
             $db->exec($sql);
+        }
 
+    }
+
+    /**
+     * check if paypal configuration is already extended Pack station check
+     *
+     * @return void
+     */
+    function checkAndUpdatePayPalDefaultModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_paypal'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='is_default'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() > 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
+                . "DROP COLUMN is_Default;";
+            $db->exec($sql);
         }
 
     }

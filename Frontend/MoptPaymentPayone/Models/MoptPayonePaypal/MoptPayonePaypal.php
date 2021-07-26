@@ -58,11 +58,6 @@ class MoptPayonePaypal extends ModelEntity
     private $image;
 
     /**
-     * @ORM\Column(name="is_default", type="boolean", precision=0, scale=0, nullable=true, unique=false)
-     */
-    private $isDefault;
-
-    /**
      * @var
      * @ORM\Column(name="pack_station_mode", type="string", nullable=true)
      */
@@ -140,16 +135,6 @@ class MoptPayonePaypal extends ModelEntity
     public function setImage($image)
     {
         $this->image = $image;
-    }
-
-    public function getIsDefault()
-    {
-        return $this->isDefault;
-    }
-
-    public function setIsDefault($isDefault)
-    {
-        $this->isDefault = $isDefault;
     }
 
     /**

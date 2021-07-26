@@ -50,8 +50,7 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.detail.Button', {
                         fieldLabel: '{s name="button"}PayPal Button{/s}',
                         xtype: 'mediaselectionfield',
                         allowBlank: false
-                    },
-                    isDefault: '{s name="default"}Default{/s}'
+                    }
                 }
             }]
         };

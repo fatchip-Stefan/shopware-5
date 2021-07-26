@@ -526,16 +526,6 @@ class FrontendCheckout implements SubscriberInterface
         $result = $builder->getQuery()->getOneOrNullResult();
 
         if (!$result) {
-            $builder->resetDQLParts();
-            $builder->select('button.image')
-                ->from('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal', 'button')
-                ->where('button.isDefault = ?1')
-                ->setParameter(1, true);
-
-            $result = $builder->getQuery()->getOneOrNullResult();
-        }
-
-        if (!$result) {
             return false;
         }
 
