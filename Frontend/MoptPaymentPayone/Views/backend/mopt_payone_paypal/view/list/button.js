@@ -4,10 +4,10 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.list.Button', {
     alias: 'widget.mopt-payone-paypal-listing-grid',
     region: 'center',
     snippets: {
-        shop: '{s name=shop}Shop{/s}',
-        language: '{s name=language}Sprache{/s}',
-        button: '{s name=button}PayPal Button{/s}',
-        default: '{s name=default}Default{/s}'
+        shop: '{s name="shop"}Shop{/s}',
+        language: '{s name="language"}Sprache{/s}',
+        button: '{s name="button"}PayPal Button{/s}',
+        default: '{s name="default"}Default{/s}'
     },
     configure: function () {
         var me = this;
