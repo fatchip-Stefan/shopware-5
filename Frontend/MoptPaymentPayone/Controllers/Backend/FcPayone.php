@@ -717,11 +717,10 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         $data = array();
         $this->Front()->Plugins()->Json()->setRenderer(true);
 
-        $paymentid = $this->Request()->getParam('paymentid');
         $repository = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal');
-        $query = $this->getAllPaymentsQuery(array('isDefault' => '1'), null, $repository);
+        $query = $this->getAllPaymentsQuery(null, null, $repository);
         $iframedata = $query->getArrayResult();
-        $data['iframedata'] = $iframedata[0];
+        $data['iframedata'] = $iframedata;
         $data['status'] = 'success';
         $encoded = json_encode($data);
         echo $encoded;
@@ -890,12 +889,22 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         $amazonpayRepo = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay');
         $amazonpayConfigs = $amazonpayRepo->findAll();
 
+        $shopRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
+        $shops = $shopRepo->findAll();
+        $localeRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Locale');
+        $locales = $localeRepo->findAll();
+        $paypalExpressRepo = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal');
+        $paypalConfigs = $paypalExpressRepo->findAll();
+
         $this->View()->assign(array(
             "payonepaymentmethods" => $payonepaymentmethods,
             "breadcrump" => $breadcrump,
             "params" => $params,
             "data" => $data,
             "amazonpayconfigs" => $amazonpayConfigs,
+            "shops" => $shops,
+            "locales" => $locales,
+            "paypalconfigs" => $paypalConfigs,
             ));
     }
 
@@ -1130,7 +1139,9 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         $paymentData = $this->Request()->getPost();
         $data['status'] = 'success';
         $data['message'] = 'Konfiguration erfolgreich gespeichert!';
-        $this->createPaypalConfig($paymentData);
+        foreach ($paymentData['row'] As $config) {
+            $this->createPaypalConfig($config);
+        }
         $encoded = json_encode($data);
         echo $encoded;
         exit(0);
@@ -1186,16 +1197,49 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         return $payment;
     }
 
-    public function createPaypalConfig($options)
+    public function createPaypalConfig($data)
     {
+        // if new image was uploaded $data['image'] contains the image base64 encoded
+        if (!empty($data['filename'])) {
+            $mediaService = $this->container->get('shopware_media.media_service');
+            $image = explode( ';base64,', $data['image']);
+            $imageDecoded = base64_decode($image[1]);
+            $mediaService->write("media/image/{$data['filename']}", $imageDecoded);
+            $url =  $mediaService->getUrl("media/image/{$data['filename']}");
+            $data['image'] = $url;
+        }
+        unset($data['filename']);
+
         $repository = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal');
         $payment = $repository->findOneBy(
             array(
-                'id' => '1'
+                'id' => $data['id']
             )
         );
+        $shopRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
+        $shop = $shopRepo->findOneBy(
+            array(
+                'id' => $data['shop']
+            )
+        );
+        $data['shop'] = $shop;
 
-        $payment->fromArray($options);
+        $localeRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Locale');
+        $locale = $localeRepo->findOneBy(
+            array(
+                'id' => $data['locale']
+            )
+        );
+        $data['locale'] = $locale;
+
+        if (! $payment) {
+            $payment = new \Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal();
+            $payment->setPackStationMode('deny');
+            $payment->fromArray($data);
+            Shopware()->Models()->persist($payment);
+        } else {
+            $payment->fromArray($data);
+        }
         Shopware()->Models()->flush($payment);
 
         return $payment;

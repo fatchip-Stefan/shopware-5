@@ -135,24 +135,64 @@
         <a style="font-size: 28px" href="#"  data-target="#payonetable">Konfiguration PayPal ECS Logos</a>
         <div id="payonetable">
             <form role="form" id="ajaxpaypalecs" enctype="multipart/form-data">
-                <table class="table-condensed">
-                    <tr>
-                        <th>Sprache</th>
-                        <th>Logo</th>
-                        <th>Hochladen</th>
-                        <th>Standard</th>
-                    </tr>
-                    <tr class="form-group">
-                        <td><select name=localeId" id="localeId" style="max-width:125px;" class="form-control">
-                                <option value ="1" >Deutsch</option>
-                                <option value ="2" >Englisch</option>
-                            </select></td>
-                        <td><output id="list"></output></td>
-                        <td><input type="file" id="files" name="files"></td>
-                        <td><input name="isDefault" id="isDefault" type="checkbox"  class="form-control"></td>
-                    </tr>
-                </table>
-                <input name="image" id="image" type="hidden">
+                    <table class="table-condensed" id="ratepaytable">
+                        <tr>
+                            <th>ID</th>
+                            <th>Shop</th>
+                            <th>Sprache</th>
+                            <th>Logo</th>
+                            <th>Hochladen</th>
+                        </tr>
+                        {foreach from=$paypalconfigs key=mykey item=paypalconfig}
+                        <tr id="row{$paypalconfig->getId()}">
+                            <td><input name="row[{$paypalconfig->getId()}][id]" id="id_{$paypalconfig->getId()}" type="text" style="max-width:125px;" class="form-control" value="{$paypalconfig->getId()}" readonly="readonly" ></td>
+                            <td><select class="form-control" name="row[{$paypalconfig->getId()}][shop]" id="shop_{$paypalconfig->getId()}">
+                                    {foreach from=$shops item=shop}
+                                        <option value="{$shop->getId()}" {if $shop->getId() == $paypalconfig->getShop()->getId()} selected="selected"{/if}>{$shop->getName()}</option>
+                                    {/foreach}
+                                </select>
+                            </td>
+                            <td><select class="form-control" name="row[{$paypalconfig->getId()}][locale]" id="locale_{$paypalconfig->getId()}">
+                                    {foreach from=$locales item=locale}
+                                        <option value="{$locale->getId()}" {if $locale->getId() == $paypalconfig->getLocale()->getId()} selected="selected"{/if}>{$locale->getLanguage()} ({$locale->getTerritory()})</option>
+                                    {/foreach}
+                                </select>
+                            </td>
+                            <td>
+                                <input name="row[{$paypalconfig->getId()}][image]" id="image_{$paypalconfig->getId()}" value="{$paypalconfig->getImage()}" hidden>
+                                <input name="row[{$paypalconfig->getId()}][filename]" id="filename_{$paypalconfig->getId()}" value="" hidden>
+                                <output id="list{$paypalconfig->getId()}"></output>
+                            </td>
+                            <td><input type="file" id="files{$paypalconfig->getId()}" name="files"></td>
+                            <td role="button" name="delete" value="delete" onclick="removeRow({$paypalconfig->getId()})"><img id="delete_{$paypalconfig->getId()}" height="100%" src="{link file='backend/_resources/images/delete.png'}"></td>
+                            {/foreach}
+
+
+                        <tr id="row0">
+                            <td><input name="row[0][id]" id="id_0" type="text" style="max-width:125px;" class="form-control" value="0" readonly="readonly" ></td>
+                            <td><select class="form-control" name="row[0][shop]" id="shop_0">
+                                    {foreach from=$shops item=shop}
+                                        <option value="{$shop->getId()}" {if $shop->getId() == $paypalconfig->getShop()->getId()} selected="selected"{/if}>{$shop->getName()}</option>
+                                    {/foreach}
+                                </select>
+                            </td>
+                            <td><select class="form-control" name="row[0][locale]" id="locale_0">
+                                    {foreach from=$locales item=locale}
+                                        <option value="{$locale->getId()}" {if $locale->getId() == $paypalconfig->getLocale()->getId()} selected="selected"{/if}>{$locale->getLanguage()} ({$locale->getTerritory()})</option>
+                                    {/foreach}
+                                </select>
+                            </td>
+                            <td>
+                                <input name="row[0][image]" id="image_{$paypalconfig->getId()}" value="{$paypalconfig->getImage()}" hidden>
+                                <input name="row[0][filename]" id="filename_{$paypalconfig->getId()}" value="" hidden>
+                                <output id="list0"></output>
+                            </td>
+                            <td><input type="file" id="files0" name="files"></td>
+                            <td role="button" name="delete" value="delete" onclick="removeRow(0)"><img id="delete_0" height="100%" src="{link file='backend/_resources/images/delete.png'}"></td>
+
+
+                        <tr><td><img id="newRow" onclick="addRow()" src="{link file='backend/_resources/images/add.png'}"></td></tr>
+                    </table>
                 <button type="submit" class="btn-payone btn " >{s name=global-form/button}Speichern{/s}</button>
             </form>                
         </div>
@@ -263,9 +303,17 @@
                     if (response.status === 'error') {
                     }
 
+                    console.log("after populate");
+                    console.log(response);
+
                     if(response.iframedata) {
-                        imagelink = response.iframedata.image;
-                        changeImage(imagelink);
+                        var arrayLength = response.iframedata.length;
+                        for (var i = 0; i < arrayLength; i++) {
+                            imagelink = response.iframedata[i].image;
+                            console.log("Image Link" + i);
+                            console.log(imagelink);
+                            changeImage(response.iframedata[i].id, imagelink);
+                        }
                     }
                 }
             });
@@ -282,15 +330,11 @@
                 type: 'POST',
                 success: function (data) {
                     response = $.parseJSON(data);
+                    console.log("Response:");
+                    console.log(response);
                     if (response.status === 'success') {
                         populateForm(form, response.data);
-
                         form.validator('validate');
-                        if (paymentid != 21) {
-                            $('#paypalecs').hide();
-                        } else {
-                            $('#paypalecs').show();
-                        }
                     }
                     if (response.status === 'error') {
                     }
@@ -346,8 +390,12 @@
 
         });
         function handleFileSelect(evt) {
-            var files = evt.target.files; // FileList object
-
+            console.log("In handleFileselect");
+            console.log(evt);
+            var files = evt.target.files;
+            var id = evt.currentTarget.id.toString().replace('files', '');
+            id = String(id);
+            console.log(id);
             // Loop through the FileList and render image files as thumbnails.
             for (var i = 0, f; f = files[i]; i++) {
 
@@ -359,27 +407,43 @@
                 var reader = new FileReader();
 
                 // Closure to capture the file information.
-                reader.onload = (function (theFile) {
+                reader.onload = (function (theFile, myid) {
                     return function (e) {
-                        var out = ['<img class="thumb" src="', e.target.result,
+                        console.log('THEFILE');
+                        console.log(theFile);
+                        console.log(theFile.name.toString());
+                        console.log("returnfunc:" + myid)
+                        var out = ['<img width=150px class="thumb" src="', e.target.result,
                             '" />'].join('');
-                        $("#list").html(out);
+                        $("#list"+ myid).html(out);
+                        $("#image_"+ myid).val(e.target.result);
+                        $("#filename_3").attr('value',theFile.name.toString());
                     };
-                })(f);
+                })(f, id);
 
                 // Read in the image file as a data URL.
                 reader.readAsDataURL(f);
             }
         }
 
-        function changeImage(a) {
-            var out = ['<img class="thumb" src="', a,
+        function changeImage(index, url) {
+            console.log("In ChangeImage");
+            console.log(url);
+            var out = ['<img width=150px class="thumb" src="', url,
                 '" />'].join('');
-            $("#list").html(out);
+            $("#list" + index).html(out);
         }
 
-        document.getElementById('files').addEventListener('change', handleFileSelect, false);
-
+        //$("#payonetable").delegate("input[type=file]", "change", function() {
+        //    alert($(this).attr("id"));
+        //});
+        var fileInputs = document.getElementsByName('files');
+        console.log('fileInputs:');
+        console.log(fileInputs);
+        for(let i = 0;i < fileInputs.length; i++)
+        {
+            fileInputs[i].addEventListener('change', handleFileSelect, false);
+        }
 
         amazonpayform.on("submit", function (event) {
             event.preventDefault();
