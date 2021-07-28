@@ -888,11 +888,8 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         $payonepaymentmethods = $query->getArrayResult();
         $amazonpayRepo = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay');
         $amazonpayConfigs = $amazonpayRepo->findAll();
-
         $shopRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
         $shops = $shopRepo->findAll();
-        $localeRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Locale');
-        $locales = $localeRepo->findAll();
         $paypalExpressRepo = Shopware()->Models()->getRepository('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal');
         $paypalConfigs = $paypalExpressRepo->findAll();
 
@@ -903,7 +900,6 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
             "data" => $data,
             "amazonpayconfigs" => $amazonpayConfigs,
             "shops" => $shops,
-            "locales" => $locales,
             "paypalconfigs" => $paypalConfigs,
             ));
     }
@@ -1139,6 +1135,25 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         $paymentData = $this->Request()->getPost();
         $data['status'] = 'success';
         $data['message'] = 'Konfiguration erfolgreich gespeichert!';
+
+        $paypalRepo = Shopware()->Models()->getRepository(
+            'Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal'
+        );
+        $paypalConfigs = $paypalRepo->findAll();
+
+        // Remove all configs that don't exist in the form data
+        foreach ($paypalConfigs as $paypalConfig) {
+            $configStillExists = false;
+            foreach ($paymentData['row'] as $config) {
+                if ($paypalConfig->getId() == $config['id']) {
+                    $configStillExists = true;
+                }
+            }
+            if ($configStillExists === false) {
+                Shopware()->Models()->remove($paypalConfig);
+            }
+        }
+
         foreach ($paymentData['row'] As $config) {
             $this->createPaypalConfig($config);
         }
@@ -1223,14 +1238,6 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
             )
         );
         $data['shop'] = $shop;
-
-        $localeRepo = Shopware()->Models()->getRepository('Shopware\Models\Shop\Locale');
-        $locale = $localeRepo->findOneBy(
-            array(
-                'id' => $data['locale']
-            )
-        );
-        $data['locale'] = $locale;
 
         if (! $payment) {
             $payment = new \Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal();

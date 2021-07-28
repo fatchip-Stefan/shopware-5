@@ -135,11 +135,10 @@
         <a style="font-size: 28px" href="#"  data-target="#payonetable">Konfiguration PayPal ECS Logos</a>
         <div id="payonetable">
             <form role="form" id="ajaxpaypalecs" enctype="multipart/form-data">
-                    <table class="table-condensed" id="ratepaytable">
+                    <table class="table-condensed" id="paypalecstable">
                         <tr>
                             <th>ID</th>
                             <th>Shop</th>
-                            <th>Sprache</th>
                             <th>Logo</th>
                             <th>Hochladen</th>
                         </tr>
@@ -152,12 +151,6 @@
                                     {/foreach}
                                 </select>
                             </td>
-                            <td><select class="form-control" name="row[{$paypalconfig->getId()}][locale]" id="locale_{$paypalconfig->getId()}">
-                                    {foreach from=$locales item=locale}
-                                        <option value="{$locale->getId()}" {if $locale->getId() == $paypalconfig->getLocale()->getId()} selected="selected"{/if}>{$locale->getLanguage()} ({$locale->getTerritory()})</option>
-                                    {/foreach}
-                                </select>
-                            </td>
                             <td>
                                 <input name="row[{$paypalconfig->getId()}][image]" id="image_{$paypalconfig->getId()}" value="{$paypalconfig->getImage()}" hidden>
                                 <input name="row[{$paypalconfig->getId()}][filename]" id="filename_{$paypalconfig->getId()}" value="" hidden>
@@ -165,20 +158,14 @@
                             </td>
                             <td><input type="file" id="files{$paypalconfig->getId()}" name="files"></td>
                             <td role="button" name="delete" value="delete" onclick="removeRow({$paypalconfig->getId()})"><img id="delete_{$paypalconfig->getId()}" height="100%" src="{link file='backend/_resources/images/delete.png'}"></td>
-                            {/foreach}
+                        {/foreach}
 
 
-                        <tr id="row0">
+                   {* <!--     <tr id="row0">
                             <td><input name="row[0][id]" id="id_0" type="text" style="max-width:125px;" class="form-control" value="0" readonly="readonly" ></td>
                             <td><select class="form-control" name="row[0][shop]" id="shop_0">
                                     {foreach from=$shops item=shop}
                                         <option value="{$shop->getId()}" {if $shop->getId() == $paypalconfig->getShop()->getId()} selected="selected"{/if}>{$shop->getName()}</option>
-                                    {/foreach}
-                                </select>
-                            </td>
-                            <td><select class="form-control" name="row[0][locale]" id="locale_0">
-                                    {foreach from=$locales item=locale}
-                                        <option value="{$locale->getId()}" {if $locale->getId() == $paypalconfig->getLocale()->getId()} selected="selected"{/if}>{$locale->getLanguage()} ({$locale->getTerritory()})</option>
                                     {/foreach}
                                 </select>
                             </td>
@@ -189,7 +176,7 @@
                             </td>
                             <td><input type="file" id="files0" name="files"></td>
                             <td role="button" name="delete" value="delete" onclick="removeRow(0)"><img id="delete_0" height="100%" src="{link file='backend/_resources/images/delete.png'}"></td>
-
+--> *}
 
                         <tr><td><img id="newRow" onclick="addRow()" src="{link file='backend/_resources/images/add.png'}"></td></tr>
                     </table>
@@ -272,11 +259,6 @@
             var iframedata = "";
 
             form.validator('validate');
-            if (paymentid != 21) {
-                $('#paypalecs').hide();
-            } else {
-                $('#paypalecs').show();
-            }
 
             $.ajax({
                 url: call,
@@ -386,6 +368,7 @@
             $.post(url, iframevalues, function (response) {
                 var data_array = $.parseJSON(response);
                 showalert("Die Daten wurden gespeichert", "alert-success");
+                location.reload();
             });
 
         });
@@ -417,7 +400,7 @@
                             '" />'].join('');
                         $("#list"+ myid).html(out);
                         $("#image_"+ myid).val(e.target.result);
-                        $("#filename_3").attr('value',theFile.name.toString());
+                        $("#filename_" + myid).attr('value',theFile.name.toString());
                     };
                 })(f, id);
 
@@ -483,8 +466,47 @@
                         break;
                 }
             });
-
         }
 
+        function removeRow(rowId) {
+            $('#row' + rowId).remove();
+        }
+
+        function addRow() {
+            var len = $('#payonetable tbody tr').length -1;
+            console.log('Length');
+            console.log(len);
+
+            var newRow = "" +
+                "<tr id='row" + len + "'>" +
+                    "<td>" +
+                        "<input name='row[" + len + "][id]' id='id_" + len + "' type='text' style='max-width:125px;' class='form-control' value='' readonly='readonly' >" +
+                    "</td>" +
+                    "<td>" +
+                    "<select class='form-control' name='row[" + len + "][shop]' id='shop_" + len + "'>" +
+                        "{foreach from=$shops item=shop} <option value='{$shop->getId()}'>{$shop->getName()}</option>{/foreach}" +
+                    "</select>" +
+                    "</td>" +
+                    "<td>" +
+                        "<input name='row[" + len + "][image]' id='image_" + len + "' value='" + len + "' hidden>" +
+                        "<input name='row[" + len + "][filename]' id='filename_" + len + "' value='' hidden>"+
+                        "<output id='list" + len + "'></output>" +
+                    "</td>" +
+                    "<td>" +
+                        "<input type='file' id='files" + len + "' name='files'>" +
+                    "</td>" +
+                    "<td role='button' name='delete' value='delete' onclick='removeRow(" + len + ")'>" +
+                        "<img id='delete_'" + len + "' height='100%' src='{link file='backend/_resources/images/delete.png'}'></td>";
+            $('#paypalecstable > tbody:last-child').append(newRow);
+
+            // register event handler after adding
+            var fileInputs = document.getElementsByName('files');
+            console.log('fileInputs:');
+            console.log(fileInputs);
+            for(let i = 0;i < fileInputs.length; i++)
+            {
+                fileInputs[i].addEventListener('change', handleFileSelect, false);
+            }
+        }
     </script>
 {/block}
