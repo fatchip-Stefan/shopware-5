@@ -14,9 +14,6 @@ class Shopware_Controllers_Backend_MoptPayonePaypal extends Shopware_Controllers
     protected function getListQuery()
     {
         $builder = parent::getListQuery();
- 
-        $builder->leftJoin('moptPayonePaypal.locale', 'locale');
-        $builder->addSelect(array('locale'));
         $builder->leftJoin('moptPayonePaypal.shop', 'shop');
         $builder->addSelect(array('shop'));
  
@@ -26,9 +23,6 @@ class Shopware_Controllers_Backend_MoptPayonePaypal extends Shopware_Controllers
     protected function getDetailQuery($id)
     {
         $builder = parent::getDetailQuery($id);
- 
-        $builder->leftJoin('moptPayonePaypal.locale', 'locale');
-        $builder->addSelect(array('locale'));
         $builder->leftJoin('moptPayonePaypal.shop', 'shop');
         $builder->addSelect(array('shop'));
  

@@ -29,11 +29,6 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.detail.Button', {
                         name: 'shopId',
                         allowBlank: false
                     },
-                    localeId: {
-                        fieldLabel: '{s name="language"}Sprache{/s}',
-                        name: 'localeId',
-                        allowBlank: false
-                    },
                     packStationMode: {
                         xtype: 'combobox',
                         fieldLabel: 'Packstation mode',

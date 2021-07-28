@@ -5,7 +5,6 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.list.Button', {
     region: 'center',
     snippets: {
         shop: '{s name="shop"}Shop{/s}',
-        language: '{s name="language"}Sprache{/s}',
         button: '{s name="button"}PayPal Button{/s}',
     },
     configure: function () {
@@ -15,7 +14,6 @@ Ext.define('Shopware.apps.MoptPayonePaypal.view.list.Button', {
             detailWindow: 'Shopware.apps.MoptPayonePaypal.view.detail.Window',
             columns: {
                 shopId: { header: me.snippets.shop },
-                localeId: { header: me.snippets.language },
                 image: { header: me.snippets.button }
             }
         };

@@ -40,19 +40,6 @@ class MoptPayonePaypal extends ModelEntity
     private $shop;
 
     /**
-     * @var
-     * @ORM\Column(name="locale_id", type="integer", unique=true)
-     */
-    protected $localeId;
-
-    /**
-     * @var Locale $locale
-     * @ORM\ManyToOne(targetEntity="Shopware\Models\Shop\Locale")
-     * @ORM\JoinColumn(name="locale_id", referencedColumnName="id")
-     */
-    private $locale;
-
-    /**
      * @ORM\Column(name="image", type="string", length=255, precision=0, scale=0, nullable=true, unique=false)
      */
     private $image;
@@ -109,22 +96,6 @@ class MoptPayonePaypal extends ModelEntity
     public function setId($id)
     {
         $this->id = $id;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getLocale()
-    {
-        return $this->locale;
-    }
-
-    /**
-     * @param mixed $locale
-     */
-    public function setLocale($locale)
-    {
-        $this->locale = $locale;
     }
 
     public function getImage()

@@ -774,6 +774,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
         // remove column is_default from paypal express config
         $this->getInstallHelper()->checkAndUpdatePayPalDefaultModelExtension();
+
+        // remove column locale_id from paypal express config
+        $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
     }
 
     /**

@@ -1903,7 +1903,29 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
 
         if ($result->rowCount() > 0) {
             $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
-                . "DROP COLUMN is_Default;";
+                . "DROP COLUMN is_default;";
+            $db->exec($sql);
+        }
+
+    }
+
+    /**
+     * check if paypal configuration is already extended lcoale
+     *
+     * @return void
+     */
+    function checkAndRemovePayPalLocaleModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_paypal'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='locale_id'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() > 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
+                . "DROP COLUMN locale_id;";
             $db->exec($sql);
         }
 
