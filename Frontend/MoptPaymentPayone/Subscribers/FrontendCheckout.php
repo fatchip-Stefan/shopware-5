@@ -512,16 +512,13 @@ class FrontendCheckout implements SubscriberInterface
      */
     protected function moptPayoneShortcutImgURL()
     {
-        $localeId = $this->container->get('shop')->getLocale()->getId();
         $shopId = $this->container->get('shop')->getId();
 
         $builder = Shopware()->Models()->createQueryBuilder();
         $builder->select('button.image')
             ->from('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal', 'button')
-            ->where('button.localeId = ?1')
-            ->andWhere('button.shopId = ?2')
-            ->setParameter(1, $localeId)
-            ->setParameter(2, $shopId);
+            ->where('button.shopId = ?1')
+            ->setParameter(1, $shopId);
 
         $result = $builder->getQuery()->getOneOrNullResult();
 
