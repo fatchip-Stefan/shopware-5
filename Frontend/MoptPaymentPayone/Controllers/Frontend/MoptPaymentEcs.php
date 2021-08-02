@@ -29,9 +29,10 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $session = Shopware()->Session();
         $paymentId = $session->moptPaypayEcsPaymentId;
         $paramBuilder = $this->moptPayone__main->getParamBuilder();
+        $userHelper = $this->moptPayone__main->getUserHelper();
 
-        $userData = $this->getUserData();
-        $amount = $this->getBasketAmount($userData);
+        $userData = $userHelper->getUserData();
+        $amount = $userHelper->getBasketAmount($userData);
 
         $expressCheckoutRequestData = $paramBuilder->buildPayPalExpressCheckout(
             $paymentId,
@@ -78,9 +79,10 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         $session = Shopware()->Session();
         $paymentId = $session->moptPaypayEcsPaymentId;
         $paramBuilder = $this->moptPayone__main->getParamBuilder();
+        $payoneUserHelper = $this->moptPayone__main->getUserHelper();
 
-        $userData = $this->getUserData();
-        $amount = $this->getBasketAmount($userData);
+        $userData = $payoneUserHelper->getUserData();
+        $amount = $payoneUserHelper->getBasketAmount($userData);
 
         $expressCheckoutRequestData = $paramBuilder->buildPayPalExpressCheckoutDetails(
             $paymentId,
@@ -114,7 +116,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             }
 
             // Check if PPE Shipping Country is allowed in backend country config
-            if (!$this->isShippingCountryAllowed($payData['country'])) {
+            if (!$this->isShippingCountryAllowed($payData['shipping_country'])) {
                 $session = Shopware()->Session();
                 $session->moptPayPalEcsError = true;
                 $session->moptPayPalEcsErrorMessage = 'Das gewählte Land derLieferadresse wird in diesem Shop nicht unterstützt';
@@ -140,7 +142,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             }
 
             $session->offsetSet('moptFormSubmitted', true);
-            $this->createrOrUpdateAndForwardUser($response, $paymentId, $session);
+            $payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
         } elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
             $session->moptPaypalEcsWorkerId = $response->getWorkorderId();
             $this->redirect($response->getRedirecturl());
@@ -167,22 +169,6 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
     {
         $country = $this->moptPayone__main->getPaymentHelper()->getCountryIdFromIso($country);
         return $country->getAllowShipping();
-    }
-
-    protected function isBillingAddressSupported($country, $paymentId)
-    {
-        $countries = $this->moptPayone__main->getPaymentHelper()
-            ->moptGetCountriesAssignedToPayment($paymentId);
-
-        if (count($countries) == 0) {
-            return true;
-        }
-
-        if (in_array($country, array_column($countries, 'countryiso'))) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -225,100 +211,6 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         unset($session->moptPaypalEcsWorkerId);
 
         return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
-    }
-
-    /**
-     * get complete user-data as array to use in view
-     *
-     * @return array
-     */
-    protected function getUserData()
-    {
-        $system = Shopware()->System();
-        $userData = Shopware()->Modules()->Admin()->sGetUserData();
-        $countryShipping = $userData['additional']['countryShipping'];
-
-        if (empty($countryShipping)) {
-            return $userData;
-        }
-
-        $sTaxFree = (
-            !empty($countryShipping['taxfree']) ||
-            !empty($countryShipping['taxfree_ustid']) &&
-            !empty($userData['billingaddress']['ustid'])
-        );
-
-        $system->sUSERGROUPDATA = Shopware()->Db()->fetchRow(
-            'SELECT * FROM s_core_customergroups
-              WHERE groupkey = ?',
-            array($system->sUSERGROUP)
-        );
-
-        $userData['additional']['show_net'] = false;
-        $userData['additional']['charge_vat'] = false;
-        Shopware()->Session()->offsetSet('sOutputNet', true);
-
-        if (!empty($sTaxFree)) {
-            $system->sUSERGROUPDATA['tax'] = 0;
-            $this->container->get('config')->offsetSet('sARTICLESOUTPUTNETTO', 1);
-            Shopware()->Session()->offsetSet('sUserGroupData', $system->sUSERGROUPDATA);
-        } else {
-            $userData['additional']['charge_vat'] = true;
-            $userData['additional']['show_net'] = !empty($system->sUSERGROUPDATA['tax']);
-            Shopware()->Session()->offsetSet('sOutputNet', empty($system->sUSERGROUPDATA['tax']));
-        }
-
-        return $userData;
-    }
-
-    /**
-     * Return the full amount to pay.
-     *
-     * @return float
-     */
-    protected function getBasketAmount($userData)
-    {
-        $basket = $this->moptPayone__main->sGetBasket();
-
-        if (empty($userData['additional']['charge_vat'])) {
-            return $basket['AmountNetNumeric'];
-        }
-
-        return empty($basket['AmountWithTaxNumeric']) ? $basket['AmountNumeric'] : $basket['AmountWithTaxNumeric'];
-    }
-
-    protected function createrOrUpdateAndForwardUser($apiResponse, $paymentId, $session)
-    {
-        $payData = $apiResponse->getPaydata()->toAssocArray();
-
-        if ($this->isUserLoggedIn($session)) {
-            $user = $this->updateUserAddresses($payData, $session, $paymentId);
-            if ($user === null) {
-                return $this->ecsAbortAction();
-            }
-        } else {
-            $this->createUserWithoutAccount($payData, $session, $paymentId);
-        }
-
-        Shopware()->Session()->sPaymentID = $session->moptPaypayEcsPaymentId;
-
-        $user = $this->getUserData();
-        //set user data
-        $user['additional']['charge_vat'] = true;
-        //set payment id
-        $user['additional']['user']['paymentID'] = $paymentId;
-
-        return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
-    }
-
-    /**
-     * Checks if user is logged in
-     * @param $session
-     * @return bool
-     */
-    protected function isUserLoggedIn($session)
-    {
-        return (isset($session->sUserId) && !empty($session->sUserId));
     }
 
     /**

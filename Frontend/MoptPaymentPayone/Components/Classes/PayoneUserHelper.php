@@ -26,6 +26,11 @@ class Mopt_PayoneUserHelper
         $this->admin = Shopware()->Modules()->Admin();
     }
 
+    /**
+     * @param $apiResponse
+     * @param $paymentId
+     * @throws Enlight_Exception
+     */
     public function createUserWithoutAccount($apiResponse, $paymentId)
     {
         $session = Shopware()->Session();
@@ -126,10 +131,14 @@ class Mopt_PayoneUserHelper
      */
     protected function extractData($personalData)
     {
+        // uncomment to simulate missing paypal phone number
+        // unset($personalData['telephonenumber']);
+        $isPhoneMandatory = Shopware()->Config()->get('requirePhoneField');
+
         $register = array();
         $register['billing']['city']           = $personalData['billing_city'];
         $register['billing']['country']        = $this->moptPayone__helper->getCountryIdFromIso($personalData['billing_country']);
-        if ($personalData['shipping_state'] !== 'Empty') {
+        if ($personalData['billing_state'] !== 'Empty') {
             $register['billing']['stateID']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state']);
         }
         $register['billing']['street']         = $personalData['billing_street'];
@@ -137,7 +146,12 @@ class Mopt_PayoneUserHelper
         $register['billing']['zipcode']        = $personalData['billing_zip'];
         $register['billing']['firstname']      = $personalData['billing_firstname'];
         $register['billing']['lastname']       = $personalData['billing_lastname'];
-        $register['billing']['phone']       = $personalData['shipping_telephonenumber'];
+        if ($isPhoneMandatory) {
+            $register['billing']['phone'] = !empty($personalData['telephonenumber']) ? $personalData['telephonenumber'] : '00000000';
+        } else {
+            $register['billing']['phone'] = $personalData['telephonenumber'];
+        }
+
         $register['billing']['salutation']     = 'mr';
         if (isset($personalData['billing_company']) && !empty($personalData['billing_company'])) {
             $register['billing']['company']        = $personalData['billing_company'];
@@ -146,7 +160,7 @@ class Mopt_PayoneUserHelper
             $register['personal']['customer_type'] = 'private';
         }
         $register['personal']['email']         = $personalData['email'];
-        $register['personal']['firstname']     = $personalData['billing_firstname'];
+        $register['personal']['firstname']     = $personalData['shiping_firstname'];
         $register['personal']['lastname']      = $personalData['billing_lastname'];
         $register['personal']['salutation']    = 'mr';
         $register['personal']['skipLogin']     = 1;
@@ -158,6 +172,9 @@ class Mopt_PayoneUserHelper
         $register['shipping']['zipcode']      = $personalData['shipping_zip'];
         $register['shipping']['city']         = $personalData['shipping_city'];
         $register['shipping']['country']      = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
+        if ($personalData['billing_state'] !== 'Empty') {
+            $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state']);
+        }
         if (isset($personalData['shipping_company']) && !empty($personalData['shipping_company'])) {
             $register['shipping']['company']        = $personalData['shipping_company'];
         } else {
@@ -346,7 +363,7 @@ class Mopt_PayoneUserHelper
         return true;
     }
 
-    public function createrOrUpdateUser($apiResponse, $paymentId, $session)
+    public function createOrUpdateUser($apiResponse, $paymentId, $session)
     {
         $payData = $apiResponse->getPaydata()->toAssocArray();
 
@@ -355,15 +372,42 @@ class Mopt_PayoneUserHelper
         } else {
             $user = $this->updateUserAddresses($payData, $session, $paymentId);
         }
+
+        //StefL check if necessary
+        //Shopware()->Session()->sPaymentID = $session->moptPaypayEcsPaymentId;
+
         $user = $this->getUserData();
         $user['sUserData']['additional']['charge_vat'] = true;
         $user['sUserData']['additional']['user']['paymentID'] = $paymentId;
         $user['additional']['charge_vat'] = true;
         $user['additional']['user']['paymentID'] = $paymentId;
         $user['additional']['user']['payment']['id'] = $paymentId;
+
+        // STEF: PPE /PP
+        // return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
     }
 
-    protected function isUserLoggedIn($session)
+    protected function createrOrUpdateAndForwardUser($apiResponse, $paymentId, $session)
+    {
+        $payData = $apiResponse->getPaydata()->toAssocArray();
+
+        if ($this->isUserLoggedIn($session)) {
+            $user = $this->updateUserAddresses($payData, $session, $paymentId);
+            if ($user === null) {
+                return $this->ecsAbortAction();
+            }
+        } else {
+            $this->createUserWithoutAccount($payData, $session, $paymentId);
+        }
+
+    }
+
+    /**
+     * Checks if user is logged in
+     * @param $session
+     * @return bool
+     */
+    public function isUserLoggedIn($session)
     {
         return (isset($session->sUserId) && !empty($session->sUserId));
     }
@@ -373,7 +417,7 @@ class Mopt_PayoneUserHelper
      *
      * @return array
      */
-    protected function getUserData()
+    public function getUserData()
     {
         $system = Shopware()->System();
         $userData = $this->admin->sGetUserData();
@@ -407,6 +451,23 @@ class Mopt_PayoneUserHelper
         }
 
         return $userData;
+    }
+
+    /**
+     * Return the full amount to pay.
+     *
+     * @return float
+     */
+    public function getBasketAmount($userData)
+    {
+        $moptPayoneMain = Shopware()->Container()->get('plugins')->Frontend()->MoptPaymentPayone()->get('MoptPayoneMain');
+        $basket = $moptPayoneMain->sGetBasket();
+
+        if (empty($userData['additional']['charge_vat'])) {
+            return $basket['AmountNetNumeric'];
+        }
+
+        return empty($basket['AmountWithTaxNumeric']) ? $basket['AmountNumeric'] : $basket['AmountWithTaxNumeric'];
     }
 
     protected function saveSeperateShippingAddress($personalData, $session)
