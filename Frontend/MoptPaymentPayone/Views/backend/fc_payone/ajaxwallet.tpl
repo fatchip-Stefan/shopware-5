@@ -114,7 +114,7 @@
                         <span id="mobileInactive-status" class="sr-only">(success)</span>
                         <div class="help-block with-errors"></div>
                     </div>
-                </div>                
+                </div>
                 <div id="paypalecs" class="form-group has-feedback has-error  menu-level-standard  menu-level-experte" >
 
                     <label for="paypalEcsActive" class="text-left col-md-3 control-label">{s name=fieldlabel/paypalEcsActive}PayPal ECS Button auf Warenkorbseite anzeigen?{/s}</label>

@@ -21,16 +21,19 @@ function resetForm($form)
 
 function populateForm($form, data)
 {
-    // console.log("PopulateForm, All form data: " + JSON.stringify(data));
+    console.log("PopulateForm, All form data: " + JSON.stringify(data));
 
     $.each(data, function (key, value)   // all json fields ordered by name
     {
+        console.log('Key' + key);
+        console.log('Value' + value);
 
         var $ctrls = $form.find('[name=' + key + ']');  //all form elements for a name. Multiple checkboxes can have the same name, but different values
 
         if ($ctrls.is('select'))
         {
             $('option', $ctrls).each(function () {
+                 if (value == null) { value = ' '};
                  if (this.value.toString() === value.toString()) {
                     this.selected = true;
                 }
@@ -44,6 +47,7 @@ function populateForm($form, data)
         {
             switch ($ctrls.attr("type"))   //input type
             {
+                case "password":
                 case "text":
                 case "hidden":
                     $ctrls.val(value);

@@ -450,6 +450,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             $this->Path() . 'Views/frontend/_resources/javascript/mopt_payolution.js',
             $this->Path() . 'Views/frontend/_resources/javascript/mopt_klarna_shipping_payment.js',
             $this->Path() . 'Views/frontend/_resources/javascript/mopt_klarna_confirm.js',
+            $this->Path() . 'Views/frontend/_resources/javascript/mopt_applepay_confirm.js',
         ];
         return new Doctrine\Common\Collections\ArrayCollection($jsFiles);
     }
@@ -595,7 +596,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
                 $em->getClassMetadata('Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'),
             ));
         } catch (ToolsException $e) {
-            // ignore
+            // ignore$e = {Doctrine\ORM\Tools\ToolsException} [7]
         }
 
         try {
@@ -768,6 +769,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
         // Add config field for trustly show iban bic setting.
         $this->getInstallHelper()->checkAndAddTrustlyShowIbanBic();
+
+        // Applepay fileds
+        $this->getInstallHelper()->checkAndAddApplepayConfig();
     }
 
     /**
