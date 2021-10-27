@@ -35,7 +35,7 @@ class Mopt_PayoneUserHelper
     {
         $session = Shopware()->Session();
         $payData = $apiResponse->getPaydata()->toAssocArray();
-        $register = $this->extractData($payData);
+        $register = $this->extractData($payData, $paymentId);
         $register["payment"]["object"]["id"] = $paymentId;
 
         $session['sRegister'] = $register;
@@ -129,17 +129,38 @@ class Mopt_PayoneUserHelper
      * @param array $personalData
      * @return array
      */
-    protected function extractData($personalData)
+    protected function extractData($personalData, $paymentId)
     {
         // uncomment to simulate missing paypal phone number
         // unset($personalData['telephonenumber']);
         $isPhoneMandatory = Shopware()->Config()->get('requirePhoneField');
 
+        // paypal express does not use the billing_ prefix so rename the keys
+        // also split lastname value into firstname and lastname
+        if (!isset($personalData['billing_street']) && isset($personalData['street'])) {
+            $keys = [ 'street', 'city', 'country', 'zip', 'addressaddition', 'lastname'];
+            foreach ($keys AS $origKey) {
+                if ($origKey !== 'lastname') {
+                    $personalData['billing_' . $origKey] = (!empty($personalData[$origKey])) ? $personalData[$origKey] : $personalData['shipping_' . $origKey];
+                } else {
+                    $splitName = explode(' ', $personalData[$origKey]);
+                    $personalData['billing_' . $origKey] = $splitName[1];
+                    $personalData['billing_firstname'] = $splitName[0];
+                }
+                unset($personalData[$origKey]);
+            }
+        }
+        // enable special state handling for paypal express
+        $paymentHelper = Mopt_PayoneMain::getInstance()->getPaymentHelper();
+        $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
+        $isPaypalECS = $paymentHelper->isPayonePaypalExpress($paymentName);
+
         $register = array();
         $register['billing']['city']           = $personalData['billing_city'];
         $register['billing']['country']        = $this->moptPayone__helper->getCountryIdFromIso($personalData['billing_country']);
         if ($personalData['billing_state'] !== 'Empty') {
-            $register['billing']['stateID']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state']);
+            // $register['billing']['stateID']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
+            $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromStatename($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
         }
         $register['billing']['street']         = $personalData['billing_street'];
         $register['billing']['additionalAddressLine1'] = $personalData['billing_addressaddition'];
@@ -160,7 +181,7 @@ class Mopt_PayoneUserHelper
             $register['personal']['customer_type'] = 'private';
         }
         $register['personal']['email']         = $personalData['email'];
-        $register['personal']['firstname']     = $personalData['shiping_firstname'];
+        $register['personal']['firstname']     = $personalData['shipping_firstname'];
         $register['personal']['lastname']      = $personalData['billing_lastname'];
         $register['personal']['salutation']    = 'mr';
         $register['personal']['skipLogin']     = 1;
@@ -172,8 +193,9 @@ class Mopt_PayoneUserHelper
         $register['shipping']['zipcode']      = $personalData['shipping_zip'];
         $register['shipping']['city']         = $personalData['shipping_city'];
         $register['shipping']['country']      = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
-        if ($personalData['billing_state'] !== 'Empty') {
-            $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state']);
+        if ($personalData['shipping_state'] !== 'Empty') {
+            // $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
+            $register['shipping']['stateID'] = $this->moptPayone__helper->getStateFromStatename($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
         }
         if (isset($personalData['shipping_company']) && !empty($personalData['shipping_company'])) {
             $register['shipping']['company']        = $personalData['shipping_company'];
@@ -298,7 +320,7 @@ class Mopt_PayoneUserHelper
             $personalData['billing_company'] = $oldUserData['billingaddress']['company'];
         }
 
-        $personalData = $this->extractData($personalData);
+        $personalData = $this->extractData($personalData,$paymentId);
 
         // use old phone number in case phone number is required
         if (Shopware()->Config()->get('requirePhoneField')) {
@@ -376,12 +398,12 @@ class Mopt_PayoneUserHelper
         //StefL check if necessary
         //Shopware()->Session()->sPaymentID = $session->moptPaypayEcsPaymentId;
 
-        $user = $this->getUserData();
-        $user['sUserData']['additional']['charge_vat'] = true;
-        $user['sUserData']['additional']['user']['paymentID'] = $paymentId;
-        $user['additional']['charge_vat'] = true;
-        $user['additional']['user']['paymentID'] = $paymentId;
-        $user['additional']['user']['payment']['id'] = $paymentId;
+        // $user = $this->getUserData();
+        // $user['sUserData']['additional']['charge_vat'] = true;
+        // $user['sUserData']['additional']['user']['paymentID'] = $paymentId;
+        // $user['additional']['charge_vat'] = true;
+        // $user['additional']['user']['paymentID'] = $paymentId;
+        // $user['additional']['user']['payment']['id'] = $paymentId;
 
         // STEF: PPE /PP
         // return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
@@ -446,7 +468,7 @@ class Mopt_PayoneUserHelper
             } else {
                 $userData['additional']['charge_vat'] = true;
                 $userData['additional']['show_net'] = !empty($system->sUSERGROUPDATA['tax']);
-                Shopware()->Session()->sOutputNet = empty($system->sUSERGROUPDATA['tax']);
+                Shopware()->Session()->sOutputNet = (empty($system->sUSERGROUPDATA['tax']));
             }
         }
 

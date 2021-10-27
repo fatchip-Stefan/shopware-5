@@ -119,7 +119,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             if (!$this->isShippingCountryAllowed($payData['shipping_country'])) {
                 $session = Shopware()->Session();
                 $session->moptPayPalEcsError = true;
-                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land derLieferadresse wird in diesem Shop nicht unterstützt';
+                $session->moptPayPalEcsErrorMessage = 'Das gewählte Land der Lieferadresse wird in diesem Shop nicht unterstützt';
                 $session->moptPayPalEcsErrorName = 'paypalexpressShippingCountryNotSupported';
                 return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
             }
@@ -143,6 +143,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
             $session->offsetSet('moptFormSubmitted', true);
             $payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
+            $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
         } elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
             $session->moptPaypalEcsWorkerId = $response->getWorkorderId();
             $this->redirect($response->getRedirecturl());
