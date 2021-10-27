@@ -588,7 +588,6 @@ class Mopt_PayoneInstallHelper
                 'template' => null,
                 'position' => 43,),
         );
-        );
     }
 
     /**
