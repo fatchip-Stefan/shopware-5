@@ -1785,6 +1785,7 @@ class Mopt_PayoneParamBuilder
         $params['paydata'] = $payData;
         $params['wallet'] = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_Wallet($walletParams);
 
+        // StefCheck:  why this?
         return array_merge($params, $this->buildPayPalEcsShippingAddress($userData));
     }
 

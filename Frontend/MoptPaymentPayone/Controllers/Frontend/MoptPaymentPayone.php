@@ -133,6 +133,12 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
         $this->mopt_payone__handleRedirectFeedback($response);
     }
 
+    public function paypalexpressAction()
+    {
+        $response = $this->mopt_payone__paypal();
+        $this->mopt_payone__handleDirectFeedback($response);
+    }
+
     public function paypalAction()
     {
         $response = $this->mopt_payone__paypal();

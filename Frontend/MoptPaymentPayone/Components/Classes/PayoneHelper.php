@@ -1248,6 +1248,31 @@ class Mopt_PayoneHelper
     }
 
     /**
+     * get state id from iso
+     *
+     * @param string $id
+     * @param string $stateIso
+     * @return string
+     */
+    public function getStateFromStatename($countryId, $stateIso, $isPaypalEcs = false)
+    {
+        // Paypal ECS returns their own state codes
+        // see https://developer.paypal.com/docs/classic/api/state_codes/#usa
+        // so try again after mapping them to the real ISO Codes
+        // $stateIso = ($isPaypalEcs && !empty($this->getCountryIsoFromPaypalCountryCode($countryId, $stateIso))) ? $this->getCountryIsoFromPaypalCountryCode($countryId, $stateIso)  : $stateIso;
+
+        $sql = 'SELECT `id` FROM s_core_countries_states WHERE `name` = "' . $stateIso . '" '
+            . 'AND `countryID` LIKE ' . $countryId . ';';https://sw5610.dev.stefops.de/lebensmittel/suesses/10/hauptartikel-mit-grundpreisberechnung
+        $stateId = Shopware()->Db()->fetchOne($sql);
+
+        if ($stateId) {
+            return $stateId;
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * get state shortcode from countryID and StateID
      *
      * @param string $countryId

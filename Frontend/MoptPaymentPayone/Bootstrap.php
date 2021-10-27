@@ -798,6 +798,15 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         // Add config field for trustly show iban bic setting.
         $this->getInstallHelper()->checkAndAddTrustlyShowIbanBic();
 
+        // Add shop to paypal express config
+        $this->getInstallHelper()->checkAndUpdatePayPalShopModelExtension();
+
+        // remove column is_default from paypal express config
+        $this->getInstallHelper()->checkAndUpdatePayPalDefaultModelExtension();
+
+        // remove column locale_id from paypal express config
+        $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
+
         // Applepay fileds
         $this->getInstallHelper()->checkAndAddApplepayConfig();
     }
