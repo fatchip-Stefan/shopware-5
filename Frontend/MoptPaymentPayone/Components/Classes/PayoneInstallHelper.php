@@ -582,6 +582,12 @@ class Mopt_PayoneInstallHelper
                 'description' => 'PAYONE Apple Pay',
                 'template' => 'mopt_paymentmean_applepay.tpl',
                 'position' => 42,),
+            array(
+                'name' => 'mopt_payone__ewallet_paypal_express',
+                'description' => 'PAYONE PayPal Express',
+                'template' => null,
+                'position' => 43,),
+        );
         );
     }
 
@@ -1905,6 +1911,75 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
                 $db->exec($sql);
             }
         }
+    }
+
+    /**
+     * check if paypal configuration is already extended Pack station check
+     *
+     * @return void
+     */
+    function checkAndUpdatePayPalShopModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_paypal'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='shop_id'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() === 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
+                . "ADD COLUMN shop_id int(11) DEFAULT 1;";
+            $db->exec($sql);
+
+            $sql = "UPDATE s_plugin_mopt_payone_paypal SET shop_id = 1;";
+            $db->exec($sql);
+        }
+
+    }
+
+    /**
+     * check if paypal configuration is already extended Pack station check
+     *
+     * @return void
+     */
+    function checkAndUpdatePayPalDefaultModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_paypal'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='is_default'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() > 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
+                . "DROP COLUMN is_default;";
+            $db->exec($sql);
+        }
+
+    }
+
+    /**
+     * check if paypal configuration is already extended lcoale
+     *
+     * @return void
+     */
+    function checkAndRemovePayPalLocaleModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_paypal'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='locale_id'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() > 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_paypal` "
+                . "DROP COLUMN locale_id;";
+            $db->exec($sql);
+        }
+
     }
 }
 

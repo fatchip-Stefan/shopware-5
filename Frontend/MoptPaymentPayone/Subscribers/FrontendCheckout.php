@@ -5,6 +5,7 @@ namespace Shopware\Plugins\MoptPaymentPayone\Subscribers;
 use Enlight\Event\SubscriberInterface;
 use Mopt_PayoneMain;
 use Mopt_PayonePaymentHelper;
+use Shopware\Models\Payment\Repository;
 
 class FrontendCheckout implements SubscriberInterface
 {
@@ -206,13 +207,15 @@ class FrontendCheckout implements SubscriberInterface
         //check if payment method is PayPal ecs
         /** @var Mopt_PayonePaymentHelper $helper */
         $helper = $this->container->get('MoptPayoneMain')->getPaymentHelper();
-        if (strpos($helper->getPaymentNameFromId($userPaymentId), 'mopt_payone__ewallet_paypal') === 0) {
+        /* TODO Chck if neccessary for new PAypal ECS
+        if (strpos($helper->getPaymentNameFromId($userPaymentId),'mopt_payone__ewallet_paypal_express') === 0) {
             if (!$this->isShippingAddressSupported($orderVars['sUserData']['shippingaddress'])) {
                 $view->assign('invalidShippingAddress', true);
                 $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
                     ->get('packStationError', 'Die Lieferung an eine Packstation ist mit dieser Zahlungsart leider nicht möglich', true));
             }
         }
+        */
 
         $router = $this->container->get('router');
 
@@ -271,14 +274,14 @@ class FrontendCheckout implements SubscriberInterface
                 ]);
 
                 $orderLines[] = [
-                    'reference' => $item->getId(),
-                    'name' => $item->getDe(),
-                    'tax_rate' => (int)($item->getVa()),
-                    'unit_price' => $price,
-                    'quantity' => $quantity,
+                    'reference'    => $item->getId(),
+                    'name'         => $item->getDe(),
+                    'tax_rate'     => (int)($item->getVa()),
+                    'unit_price'   => $price,
+                    'quantity'     => $quantity,
                     'total_amount' => $price * $quantity,
-                    'image_url' => $basket['content'][$basketItemIndex]['image']['source'],
-                    'product_url' => $itemUrl,
+                    'image_url'    => $basket['content'][$basketItemIndex]['image']['source'],
+                    'product_url'  => $itemUrl,
                 ];
             }
 
@@ -332,9 +335,13 @@ class FrontendCheckout implements SubscriberInterface
 
         if ($request->getActionName() === 'cart') {
             if ($session->moptPayPalEcsError) {
+                $message = $session->moptPayPalEcsErrorMessage;
+                $name = $session->moptPayPalEcsErrorName;
                 unset($session->moptPayPalEcsError);
+                unset($session->moptPayPalEcsErrorMessage);
+                unset($session->moptPayPalEcsErrorName);
                 $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get('generalErrorMessage', 'Es ist ein Fehler aufgetreten', true));
+                    ->get($name, $message, true));
             }
             if ($session->moptPaydirektExpressError) {
                 unset($session->moptPayDirektExpressError);
@@ -456,17 +463,28 @@ class FrontendCheckout implements SubscriberInterface
 
     protected function isPayPalEcsActive($checkoutController)
     {
-        $payments = $checkoutController->getPayments();
+        $shop = $this->container->get('shop');
         $payoneMain = $this->container->get('MoptPayoneMain');
-        $payonePaymentHelper = $payoneMain->getPaymentHelper();
+
+        unset(Shopware()->Session()->moptPaypayEcsPaymentId);
+        /** @var Repository $paymentRepository */
+        $paymentRepository = Shopware()->Models()->getRepository(\Shopware\Models\Payment\Payment::class);
+
+        $builder = $paymentRepository->getListQueryBuilder();
+        $builder->addFilter(['payment.name' => '%mopt_payone__ewallet_paypal_express%', 'payment.active' => 1]);
+        $query = $builder->getQuery();
+        $test = $query->execute();
 
         if ($payoneMain->getHelper()->isAboCommerceArticleInBasket()) {
             return false;
         }
+        if (empty($test)) {
+            return false;
+        }
 
-        foreach ($payments as $paymentMethod) {
-            if ($payonePaymentHelper->isPayPalEcsActive($payoneMain, $paymentMethod)) {
-                Shopware()->Session()->moptPaypayEcsPaymentId = $paymentMethod['id'];
+        foreach ($test AS $payment) {
+            if ($payoneMain->getPaymentHelper()->isPaymentAssignedToSubshop($payment->getId(), $shop->getId())) {
+                Shopware()->Session()->moptPaypayEcsPaymentId = $payment->getId();
                 return true;
             }
         }
@@ -510,25 +528,15 @@ class FrontendCheckout implements SubscriberInterface
      */
     protected function moptPayoneShortcutImgURL()
     {
-        $localeId = $this->container->get('shop')->getLocale()->getId();
+        $shopId = $this->container->get('shop')->getId();
 
         $builder = Shopware()->Models()->createQueryBuilder();
         $builder->select('button.image')
             ->from('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal', 'button')
-            ->where('button.localeId = ?1')
-            ->setParameter(1, $localeId);
+            ->where('button.shopId = ?1')
+            ->setParameter(1, $shopId);
 
         $result = $builder->getQuery()->getOneOrNullResult();
-
-        if (!$result) {
-            $builder->resetDQLParts();
-            $builder->select('button.image')
-                ->from('Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal', 'button')
-                ->where('button.isDefault = ?1')
-                ->setParameter(1, true);
-
-            $result = $builder->getQuery()->getOneOrNullResult();
-        }
 
         if (!$result) {
             return false;

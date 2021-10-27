@@ -456,6 +456,17 @@ class Mopt_PayonePaymentHelper
     }
 
     /**
+     * check if given payment name is payone paypal payment
+     *
+     * @param string $paymentName
+     * @return boolean
+     */
+    public function isPayonePaypalExpress($paymentName)
+    {
+        return preg_match('#mopt_payone__ewallet_paypal_express#', $paymentName) ? true : false;
+    }
+
+    /**
      * check if given payment name is payone paydirekt payment
      *
      * @param string $paymentName
@@ -879,6 +890,34 @@ class Mopt_PayonePaymentHelper
         return $paymentCountries;
     }
 
+    public function isPaymentAssignedToSubshop($paymentId, $subshopID)
+    {
+        $sql = 'SELECT subshopID '
+            . 'FROM s_core_paymentmeans_subshops '
+            . 'WHERE s_core_paymentmeans_subshops.paymentID = ?;'
+        ;
+        $assignedShops = Shopware()->Db()->fetchAll($sql, $paymentId);
+
+        // paymentID was not found = no restrictions
+        if (count($assignedShops) == 0) {
+            return true;
+        }
+
+        if (in_array($subshopID, array_column('subshopID', $assignedShops))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getCountryIdFromIso($countryIso)
+    {
+        /** @var  $entityManager \Shopware\Components\Model\ModelManager*/
+        $entityManager = Shopware()->Container()->get('models');
+        $country = $entityManager->getRepository('Shopware\Models\Country\Country')->findOneBy(array('iso' => $countryIso));
+        return $country;
+    }
+
     public function moptGetShippingCountriesAssignedToPayment($paymentId)
     {
         $sql = 'SELECT s_premium_dispatch_countries.countryID, s_core_countries.countryname, s_core_countries.countryiso '
@@ -1236,6 +1275,10 @@ class Mopt_PayonePaymentHelper
             return 'instanttransfer';
         }
 
+        if ($this->isPayonePaypalExpress($paymentShortName)) {
+            return 'paypalexpress';
+        }
+
         if ($this->isPayonePaypal($paymentShortName)) {
             return 'paypal';
         }
@@ -1338,7 +1381,7 @@ class Mopt_PayonePaymentHelper
      */
     public function isPayPalEcsActive($payoneMain, $paymentMethod)
     {
-        if (!$this->isPayonePaypal($paymentMethod['name'])) {
+        if (!$this->isPayonePaypalExpress($paymentMethod['name'])) {
             return false;
         }
 

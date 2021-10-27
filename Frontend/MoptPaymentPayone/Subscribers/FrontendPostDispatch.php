@@ -421,6 +421,10 @@ class FrontendPostDispatch implements SubscriberInterface
                         unset ($payments[$paypalIndex]);
                     }
                 }
+                if ($moptPaymentHelper->isPayonePaypalExpress($payment['name'])) {
+                    $paypalExpressIndex = $index;
+                    unset ($payments[$paypalExpressIndex]);
+                }
                 if ($payment['name'] === 'mopt_payone__ewallet_paydirekt_express') {
                     $paydirektexpressIndex = $index;
                     unset ($payments[$paydirektexpressIndex]);
