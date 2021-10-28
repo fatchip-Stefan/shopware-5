@@ -158,9 +158,10 @@ class Mopt_PayoneUserHelper
         $register = array();
         $register['billing']['city']           = $personalData['billing_city'];
         $register['billing']['country']        = $this->moptPayone__helper->getCountryIdFromIso($personalData['billing_country']);
-        if ($personalData['billing_state'] !== 'Empty') {
+        if (!empty($personalData['billing_state']) && $personalData['billing_state'] !== 'Empty') {
             // $register['billing']['stateID']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
-            $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromStatename($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
+            // $register['billing']['state'] = $personalData['billing_state'];
+            $register['billing']['state'] = $this->moptPayone__helper->getStateFromStatename($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
         }
         $register['billing']['street']         = $personalData['billing_street'];
         $register['billing']['additionalAddressLine1'] = $personalData['billing_addressaddition'];
@@ -195,7 +196,8 @@ class Mopt_PayoneUserHelper
         $register['shipping']['country']      = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
         if ($personalData['shipping_state'] !== 'Empty') {
             // $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
-            $register['shipping']['stateID'] = $this->moptPayone__helper->getStateFromStatename($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
+            // $register['shipping']['state'] = $personalData['shipping_state'];
+            $register['shipping']['state'] = $this->moptPayone__helper->getStateFromStatename($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
         }
         if (isset($personalData['shipping_company']) && !empty($personalData['shipping_company'])) {
             $register['shipping']['company']        = $personalData['shipping_company'];
@@ -273,7 +275,9 @@ class Mopt_PayoneUserHelper
 //      $country = $address->getCountry();
         $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $shippingData['country'] ));
 
+        $countryState = Shopware()->Models()->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $shippingData['state']));
         $shippingData['country'] = $country;
+        $shippingData['state'] = $countryState;
         $address->fromArray($shippingData);
 
         Shopware()->Container()->get('shopware_account.address_service')->update($address);

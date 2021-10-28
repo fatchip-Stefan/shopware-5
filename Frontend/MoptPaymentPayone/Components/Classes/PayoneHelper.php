@@ -1262,7 +1262,7 @@ class Mopt_PayoneHelper
         // $stateIso = ($isPaypalEcs && !empty($this->getCountryIsoFromPaypalCountryCode($countryId, $stateIso))) ? $this->getCountryIsoFromPaypalCountryCode($countryId, $stateIso)  : $stateIso;
 
         $sql = 'SELECT `id` FROM s_core_countries_states WHERE `name` = "' . $stateIso . '" '
-            . 'AND `countryID` LIKE ' . $countryId . ';';https://sw5610.dev.stefops.de/lebensmittel/suesses/10/hauptartikel-mit-grundpreisberechnung
+            . 'AND `countryID` LIKE ' . $countryId . ';';
         $stateId = Shopware()->Db()->fetchOne($sql);
 
         if ($stateId) {
