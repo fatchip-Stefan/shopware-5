@@ -903,7 +903,7 @@ class Mopt_PayonePaymentHelper
             return true;
         }
 
-        if (in_array($subshopID, array_column('subshopID', $assignedShops))) {
+        if (in_array((string)$subshopID, array_column($assignedShops, 'subshopID'))) {
             return true;
         }
 
