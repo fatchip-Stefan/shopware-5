@@ -132,7 +132,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
                 return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
             }
 
-            // Check if PPE Shipping Country is assigned to PPE
+            // Check if the Subshop is assigned to PPE
             if (!$this->isPaymentAssignedToSubshop($paymentId, $this->container->get('shop')->getId())) {
                 $session = Shopware()->Session();
                 $session->moptPayPalEcsError = true;
