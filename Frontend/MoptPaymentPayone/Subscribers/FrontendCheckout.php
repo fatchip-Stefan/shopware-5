@@ -39,10 +39,6 @@ class FrontendCheckout implements SubscriberInterface
             'Shopware_Controllers_Frontend_Checkout::getSelectedPayment::after' => 'onGetSelectedPayment',
             // save terms agreement handling
             'Enlight_Controller_Action_PostDispatch_Frontend_Checkout' => 'moptExtendController_Frontend_Checkout',
-            // only used for payolution installments for now
-            // redirects the customer back to shippingpayment for re-calculation of payment conditions
-            'Shopware_Controllers_Frontend_Checkout::deleteArticleAction::after' => 'onBasketChangeConfirmPage',
-            'Shopware_Controllers_Frontend_Checkout::changeQuantityAction::after' => 'onBasketChangeConfirmPage',
             'Shopware_Controllers_Frontend_Checkout::ajaxAddArticleAction::after' => 'onBasketChange',
             'Shopware_Controllers_Frontend_Checkout::ajaxDeleteArticle::after' => 'onBasketChange',
             'Shopware_Controllers_Frontend_Checkout::ajaxAddArticleCartAction::after' => 'onBasketChange',
@@ -73,48 +69,6 @@ class FrontendCheckout implements SubscriberInterface
 
     /**
      * set redirect flag for redirecting to paymentshipping in case basket is changed
-     * only used for payolution installment to re-calculate payment conditions
-     *
-     * @param \Enlight_Hook_HookArgs $arguments
-     * @return type
-     */
-    public function onBasketChangeConfirmPage(\Enlight_Hook_HookArgs $arguments)
-    {
-        $action = Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'];
-        $sTargetAction = Shopware()->Modules()->Admin()->sSYSTEM->_GET['sTargetAction'];
-
-        if ($action !== 'addArticle' && $action !== 'changeQuantity' && $action !== 'deleteArticle') {
-            return;
-        }
-        if ($sTargetAction !== 'confirm') {
-            return;
-        }
-
-        $ret = $arguments->getReturn();
-        $userData = Shopware()->Modules()->Admin()->sGetUserData();
-        if (!$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePayolutionInstallment($userData['additional']['payment']['name'])
-            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayoneRatepayInstallment($userData['additional']['payment']['name'])
-            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaypalInstallment($userData['additional']['payment']['name'])
-            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaypDirektExpress($userData['additional']['payment']['name'])
-        ) {
-            return;
-        }
-        // Set redirect flag
-        if (isset(Shopware()->Session()->moptPaypalInstallmentWorkerId)) {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
-        if (isset(Shopware()->Session()->moptPaydirektExpressWorkerId)) {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
-
-        if ($this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayoneRatepayInstallment($userData['additional']['payment']['name'])) {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
-        $arguments->setReturn($ret);
-    }
-
-    /**
-     * set redirect flag for redirecting to paymentshipping in case basket is changed
      * only used for some payone payment methods
      *
      * @param \Enlight_Hook_HookArgs $arguments
@@ -123,18 +77,31 @@ class FrontendCheckout implements SubscriberInterface
     public function onBasketChange(\Enlight_Hook_HookArgs $arguments)
     {
         $ret = $arguments->getReturn();
+        $action = Shopware()->Modules()->Admin()->sSYSTEM->_GET['action'];
+        $sTargetAction = Shopware()->Modules()->Admin()->sSYSTEM->_GET['sTargetAction'];
         $userData = Shopware()->Modules()->Admin()->sGetUserData();
-        if (!$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaypalInstallment($userData['additional']['payment']['name']) &&
-            !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayoneRatepayInstallment($userData['additional']['payment']['name']) &&
-            !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaydirektExpress($userData['additional']['payment']['name'])
+
+        if ($action !== 'addArticle' && $action !== 'changeQuantity' && $action !== 'deleteArticle') {
+            return;
+        }
+        if ($sTargetAction !== 'confirm') {
+            return;
+        }
+
+        if (!$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePayolutionInstallment($userData['additional']['payment']['name'])
+            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayoneRatepayInstallment($userData['additional']['payment']['name'])
+            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaypalInstallment($userData['additional']['payment']['name'])
+            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaydirektExpress($userData['additional']['payment']['name'])
+            && !$this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayonePaypalExpress($userData['additional']['payment']['name'])
         ) {
             return;
         }
+
         // Set redirect flag
-        if (isset(Shopware()->Session()->moptPaypalInstallmentWorkerId)) {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
-        if (isset(Shopware()->Session()->moptPaydirektExpressWorkerId)) {
+        if (isset(Shopware()->Session()->moptPaypalInstallmentWorkerId) || isset(Shopware()->Session()->moptPaydirektExpressWorkerId) ||
+            isset(Shopware()->Session()->moptPaypalEcsWorkerId) || isset(Shopware()->Session()->moptPayolutionInstallmentWorkerId)
+        )
+        {
             Shopware()->Session()->moptBasketChanged = true;
         }
 
@@ -404,7 +371,6 @@ class FrontendCheckout implements SubscriberInterface
             }
 
         }
-
 
         if ($templateSuffix === '' && $this->isPaydirektExpressActive($subject) && ($imageUrl = $this->moptPayonePaydirektShortcutImgURL())) {
             $view->assign('moptPayDirektShortcutImgURL', $imageUrl);

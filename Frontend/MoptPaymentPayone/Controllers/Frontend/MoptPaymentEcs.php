@@ -144,10 +144,14 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             $session->offsetSet('moptFormSubmitted', true);
             $payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
             $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
-        } elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
+        }
+
+        /* Check if this can be safely removed
+        elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
             $session->moptPaypalEcsWorkerId = $response->getWorkorderId();
             $this->redirect($response->getRedirecturl());
-        } else {
+        */
+        else {
             return $this->forward('ecsAbort');
         }
     }

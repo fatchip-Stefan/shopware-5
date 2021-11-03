@@ -372,6 +372,8 @@ class FrontendPostDispatch implements SubscriberInterface
             }
         }
 
+        // used by ratepay installments
+        // used by paypal installments
         if (($controllerName == 'checkout' && $request->getActionName() == 'shippingPayment')) {
             if ($session->moptBasketChanged) {
                 unset($session->moptBasketChanged);
@@ -455,19 +457,31 @@ class FrontendPostDispatch implements SubscriberInterface
 
         if (($controllerName == 'account' && $request->getActionName() == 'payment')) {
 
-            // remove AmazonPay from Payment List
+            // remove express and installment payments from payment List
             $payments = $view->getAssign('sPaymentMeans');
 
             foreach ($payments as $index => $payment) {
-                if (strpos($payment['name'], 'mopt_payone__ewallet_amazon_pay') !== false ) {
+                if (strpos($payment['name'], 'mopt_payone__ewallet_amazon_pay') !== false) {
                     $amazonPayIndex = $index;
                 }
                 if (strpos($payment['name'], 'mopt_payone__ewallet_applepay') !== false && $session->get('moptAllowApplePay', false) !== true ) {
                     $applepayIndex = $index;
                 }
+                if (strpos($payment['name'], 'mopt_payone__ewallet_paypal_express') !== false) {
+                    $paypalExpressIndex = $index;
+                }
+                if (strpos($payment['name'], 'mopt_payone__fin_payolution_installment') !== false) {
+                    $payolutionInstallmentIndex = $index;
+                }
+                if (strpos($payment['name'], 'mopt_payone__fin_ratepay_installment') !== false) {
+                    $ratepayInstallmentIndex = $index;
+                }
             }
-            unset ($payments[$amazonPayIndex]);
-            unset ($payments[$applepayIndex]);
+            unset($payments[$amazonPayIndex]);
+            unset($payments[$applepayIndex]);
+            unset($payments[$paypalExpressIndex]);
+            unset($payments[$payolutionInstallmentIndex]);
+            unset($payments[$ratepayInstallmentIndex]);
             $view->assign('sPaymentMeans', $payments);
         }
 
