@@ -285,6 +285,11 @@ class FrontendPostDispatch implements SubscriberInterface
             }
         }
 
+        // set flag to remove all address change buttons on confirm page
+        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm' && in_array($moptPaymentName, \Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_SHIPPINGPAYMENTPAGE))) {
+            $view->assign('moptDenyAddressChanges', true);
+        }
+
         if (($controllerName == 'checkout' && $request->getActionName() == 'finish')) {
             if ($session->moptBarzahlenCode) {
                 $view->assign('moptBarzahlenCode', $session->moptBarzahlenCode);

@@ -65,7 +65,6 @@ class Mopt_PayoneConfig
         'mopt_payone__fin_paypal_installment',
     ];
 
-    // only paypal express
     const PAYMENTS_ADDRESSCHECK_EXCLUDED = [
         'mopt_payone__ewallet_amazon_pay',
         'mopt_payone__ewallet_paypal',
