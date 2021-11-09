@@ -69,7 +69,9 @@ class Mopt_PayoneConfig
     const PAYMENTS_ADDRESSCHECK_EXCLUDED = [
         'mopt_payone__ewallet_amazon_pay',
         'mopt_payone__ewallet_paypal',
-
+        'mopt_payone__ewallet_paypal_express',
+        'mopt_payone__ewallet_paydirekt_express',
+        'mopt_payone__ewallet_applepay'
     ];
 
     const PAYMENTS_ADDRESSCHECK_INCLUDED = [
