@@ -59,15 +59,28 @@
     {/if}
 {/block}
 
-{block name="frontend_checkout_confirm_information_addresses_shipping_panel_actions"}
+{block name="frontend_checkout_confirm_information_addresses_billing_panel_actions_change_address"}
     {if $moptDenyAddressChanges}
     {else}
         {$smarty.block.parent}
     {/if}
 {/block}
 
+{block name="frontend_checkout_confirm_information_addresses_billing_panel_actions_select_address"}
+    {if $moptDenyAddressChanges}
+    {else}
+        {$smarty.block.parent}
+    {/if}
+{/block}
 
-{block name="frontend_checkout_confirm_information_addresses_billing_panel_actions"}
+{block name="frontend_checkout_confirm_information_addresses_shipping_panel_actions_change_address"}
+    {if $moptDenyAddressChanges}
+    {else}
+        {$smarty.block.parent}
+    {/if}
+{/block}
+
+{block name="frontend_checkout_confirm_information_addresses_shipping_panel_actions_select_address"}
     {if $moptDenyAddressChanges}
     {else}
         {$smarty.block.parent}
