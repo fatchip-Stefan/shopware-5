@@ -110,6 +110,22 @@ class Mopt_PayoneConfig
         'mopt_payone__fin_paypal_installment',
     ];
 
+    const PAYMENTS_EXCLUDED_FROM_ACCOUNTPAGE = [
+        'mopt_payone__ewallet_amazon_pay',
+        'mopt_payone__ewallet_paypal_express',
+        'mopt_payone__fin_payolution_installment',
+        'mopt_payone__fin_ratepay_installment',
+        'mopt_payone__ewallet_paydirekt_express',
+        'mopt_payone__ewallet_applepay',
+    ];
+
+    const PAYMENTS_EXCLUDED_FROM_SHIPPINGPAYMENTPAGE = [
+        'mopt_payone__ewallet_amazon_pay',
+        'mopt_payone__ewallet_paypal_express',
+        'mopt_payone__ewallet_paydirekt_express',
+        // 'mopt_payone__ewallet_applepay', applepay is handled seperately
+    ];
+
   /**
    * return array with configured valid IPs to accept transaction feedback from
    *

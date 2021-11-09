@@ -81,10 +81,15 @@ class FrontendCheckout implements SubscriberInterface
         $sTargetAction = Shopware()->Modules()->Admin()->sSYSTEM->_GET['sTargetAction'];
         $userData = Shopware()->Modules()->Admin()->sGetUserData();
 
-        if ($action !== 'addArticle' && $action !== 'changeQuantity' && $action !== 'deleteArticle') {
+        if ($action !== 'addArticle' && $action !== 'changeQuantity' && $action !== 'deleteArticle' &&
+            $action !== 'ajaxAddArticleCart' && $action !== 'ajaxDeleteArticleCart' && $action !== 'ajaxDeleteArticle' &&
+            $action !== 'ajaxAddArticle'
+        )
+        {
             return;
         }
-        if ($sTargetAction !== 'confirm') {
+        // targetAction is null for ajax requests
+        if ($sTargetAction !== 'confirm' && !is_null($sTargetAction)) {
             return;
         }
 

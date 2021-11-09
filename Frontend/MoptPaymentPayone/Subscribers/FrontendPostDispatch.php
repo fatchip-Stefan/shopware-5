@@ -374,6 +374,9 @@ class FrontendPostDispatch implements SubscriberInterface
 
         // used by ratepay installments
         // used by paypal installments
+        // paypal express
+        // redirect express payments to checkout/cart
+        // installment payments to shipping/payment on Address or basket changes
         if (($controllerName == 'checkout' && $request->getActionName() == 'shippingPayment')) {
             if ($session->moptBasketChanged) {
                 unset($session->moptBasketChanged);
@@ -408,13 +411,8 @@ class FrontendPostDispatch implements SubscriberInterface
                 $view->assign('moptOverlayRedirectNotice', $redirectnotice);
             }
 
-            // remove AmazonPay from Payment List
             $payments = $view->getAssign('sPayments');
-
             foreach ($payments as $index => $payment) {
-                if (strpos($payment['name'], 'mopt_payone__ewallet_amazon_pay') !== false ) {
-                    $amazonPayIndex = $index;
-                }
                 // remove paypal for countries which need a state
                 // in case no state for the country is supplied
                 if ($moptPaymentHelper->isPayonePaypal($payment['name'])) {
@@ -423,29 +421,16 @@ class FrontendPostDispatch implements SubscriberInterface
                         unset ($payments[$paypalIndex]);
                     }
                 }
-                if ($moptPaymentHelper->isPayonePaypalExpress($payment['name'])) {
-                    $paypalExpressIndex = $index;
-                    unset ($payments[$paypalExpressIndex]);
-                }
-                if ($payment['name'] === 'mopt_payone__ewallet_paydirekt_express') {
-                    $paydirektexpressIndex = $index;
-                    unset ($payments[$paydirektexpressIndex]);
-                }
-                if ($payment['name'] === 'mopt_payone__ewallet_applepay' && $session->get('moptAllowApplePay', false) !== true  ) {
-                    $applepayIndex = $index;
-                    unset ($payments[$applepayIndex]);
-                }
-
                 // remove Klarna payments according to supported country and currency combination
                 if ($payment['name'] === 'mopt_payone_klarna' && !$this->isCountryCurrencySupportedFromKlarna()
                 ) {
                     $klarnaIndex = $index;
                     unset ($payments[$klarnaIndex]);
                 }
-
             }
-            unset ($payments[$amazonPayIndex]);
-            $view->assign('sPayments', $payments);
+            // remove other express payments
+            $view->assign('sPayments', $moptPaymentHelper->filterExpressPayments($payments, $session));
+
         }
 
         if ($controllerName === 'address' &&
@@ -459,30 +444,7 @@ class FrontendPostDispatch implements SubscriberInterface
 
             // remove express and installment payments from payment List
             $payments = $view->getAssign('sPaymentMeans');
-
-            foreach ($payments as $index => $payment) {
-                if (strpos($payment['name'], 'mopt_payone__ewallet_amazon_pay') !== false) {
-                    $amazonPayIndex = $index;
-                }
-                if (strpos($payment['name'], 'mopt_payone__ewallet_applepay') !== false && $session->get('moptAllowApplePay', false) !== true ) {
-                    $applepayIndex = $index;
-                }
-                if (strpos($payment['name'], 'mopt_payone__ewallet_paypal_express') !== false) {
-                    $paypalExpressIndex = $index;
-                }
-                if (strpos($payment['name'], 'mopt_payone__fin_payolution_installment') !== false) {
-                    $payolutionInstallmentIndex = $index;
-                }
-                if (strpos($payment['name'], 'mopt_payone__fin_ratepay_installment') !== false) {
-                    $ratepayInstallmentIndex = $index;
-                }
-            }
-            unset($payments[$amazonPayIndex]);
-            unset($payments[$applepayIndex]);
-            unset($payments[$paypalExpressIndex]);
-            unset($payments[$payolutionInstallmentIndex]);
-            unset($payments[$ratepayInstallmentIndex]);
-            $view->assign('sPaymentMeans', $payments);
+            $view->assign('sPaymentMeans', $moptPaymentHelper->filterExpressAndInstallmentPayments($payments));
         }
 
         if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {

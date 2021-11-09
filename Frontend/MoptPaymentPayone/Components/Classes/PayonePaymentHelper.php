@@ -1871,4 +1871,48 @@ class Mopt_PayonePaymentHelper
         $klarnaPersonalIdNeededCountries = array('NO', 'SE', 'DK'); // SE verified FI unsure
         return in_array($billingCountryIso, $klarnaPersonalIdNeededCountries);
     }
+
+    /**
+     * remove express and installment payments from
+     * payment lists
+     *
+     * @param $payments array
+     * @return array
+     */
+    public function filterExpressAndInstallmentPayments($payments)
+    {
+        foreach ($payments as $index => $payment) {
+            foreach (Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_ACCOUNTPAGE as $exludedPayment) {
+                if (strpos($payment['name'], $exludedPayment) !== false) {
+                    unset($payments[$index]);
+                }
+            }
+        }
+
+        return $payments;
+    }
+
+    /**
+     * remove express payments from
+     * payment list
+     *
+     * @param $payments array
+     * @param $session
+     * @return array
+     */
+    public function filterExpressPayments($payments, $session)
+    {
+        foreach ($payments as $index => $payment) {
+            foreach (Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_SHIPPINGPAYMENTPAGE as $exludedPayment) {
+                if (strpos($payment['name'], $exludedPayment) !== false) {
+                    unset($payments[$index]);
+                }
+                if (strpos($payment['name'], 'mopt_payone__ewallet_applepay') !== false && $session->get('moptAllowApplePay', false) !== true ) {
+                    unset($payments[$index]);
+                }
+            }
+        }
+
+        return $payments;
+    }
 }
