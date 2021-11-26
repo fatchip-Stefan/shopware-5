@@ -305,21 +305,10 @@ class FrontendCheckout implements SubscriberInterface
             $view->assign('locale', str_replace('_', '-', Shopware()->Shop()->getLocale()->getLocale()));
         }
 
-        if ($request->getActionName() === 'cart') {
-            if ($session->moptPayPalEcsError) {
-                $message = $session->moptPayPalEcsErrorMessage;
-                $name = $session->moptPayPalEcsErrorName;
-                unset($session->moptPayPalEcsError);
-                unset($session->moptPayPalEcsErrorMessage);
-                unset($session->moptPayPalEcsErrorName);
-                $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get($name, $message, true));
-            }
-            if ($session->moptPaydirektExpressError) {
-                unset($session->moptPayDirektExpressError);
-                $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get('generalErrorMessage', 'Es ist ein Fehler aufgetreten', true));
-            }
+        if ($request->getActionName() === 'cart' && $session->moptPayoneUserHelperError ) {
+            $view->assign('sBasketInfo', $session->moptPayoneUserHelperErrorMessage);
+            unset($session->moptPayoneUserHelperError);
+            unset($session->moptPayoneUserHelperErrorMessage);
         }
 
         $templateSuffix = '';

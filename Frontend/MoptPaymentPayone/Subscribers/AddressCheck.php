@@ -139,21 +139,12 @@ class AddressCheck implements SubscriberInterface
             $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
 
             if (in_array($cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_ADDRESSCHECK_EXCLUDED)) {
-                // check for paypal ecs
-                if ($isPayonePaypal && Shopware()->Session()->moptPaypalEcsWorkerId) {
                     $arguments->setReturn(false);
                     return;
-                } elseif ($isPayonePaypal && ! Shopware()->Session()->moptPaypalEcsWorkerId) {
-                    // do nothing
-                } else {
-                    $arguments->setReturn(false);
-                    return;
-                }
-
             }
 
             $userObject = $userId ? Shopware()->Models()
-                ->getRepository('Shopware\Models\Customer\Customer')
+                ->getRepository(Shopware\Models\Customer\Customer::class)
                 ->find($userId) : null;
 
             if (!$userObject) {
@@ -397,17 +388,8 @@ class AddressCheck implements SubscriberInterface
         $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
 
         if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_ADDRESSCHECK_EXCLUDED)) {
-            // check for paypal ecs
-            if ($isPayonePaypal && Shopware()->Session()->moptPaypalEcsWorkerId) {
                 $arguments->setReturn(false);
                 return;
-            } elseif ($isPayonePaypal && ! Shopware()->Session()->moptPaypalEcsWorkerId) {
-                // do nothing
-            } else {
-                $arguments->setReturn(false);
-                return;
-            }
-
         }
 
         // get billing address attributes

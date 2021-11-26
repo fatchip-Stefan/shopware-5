@@ -22,20 +22,28 @@ class Mopt_PayoneUserHelper
      */
     public function __construct()
     {
+        $this->moptPayone__main = Mopt_PayoneMain::getInstance();
         $this->moptPayone__helper = Mopt_PayoneMain::getInstance()->getHelper();
+
         $this->admin = Shopware()->Modules()->Admin();
     }
 
     /**
      * @param $apiResponse
      * @param $paymentId
+     * @param $session
+     * @return bool $success
      * @throws Enlight_Exception
      */
-    public function createUserWithoutAccount($apiResponse, $paymentId)
+    public function createUserWithoutAccount($apiResponse, $paymentId, $session)
     {
-        $session = Shopware()->Session();
-        $payData = $apiResponse->getPaydata()->toAssocArray();
-        $register = $this->extractData($payData, $paymentId);
+        $register = $this->extractData($apiResponse, $paymentId);
+
+        $success = $this->checkAllowedCountries($register, $paymentId, $session);
+        if (!$success) {
+            return $success;
+        }
+
         $register["payment"]["object"]["id"] = $paymentId;
 
         $session['sRegister'] = $register;
@@ -102,8 +110,6 @@ class Mopt_PayoneUserHelper
         Shopware()->Models()->persist($getUser);
         Shopware()->Models()->flush();
 
-
-        // $data['auth']['password']= $getUser->getPassword();
         $data['auth']['passwordMD5']= $getUser->getPassword();
         $data['auth']['encoderName'] = 'md5';
         return $data;
@@ -127,9 +133,10 @@ class Mopt_PayoneUserHelper
      * get user-data as array from response
      *
      * @param array $personalData
+     * @param $paymentId
      * @return array
      */
-    protected function extractData($personalData, $paymentId)
+    protected function extractData(array $personalData, $paymentId)
     {
         // uncomment to simulate missing paypal phone number
         // unset($personalData['telephonenumber']);
@@ -138,7 +145,7 @@ class Mopt_PayoneUserHelper
         // paypal express does not use the billing_ prefix so rename the keys
         // also split lastname value into firstname and lastname
         if (!isset($personalData['billing_street']) && isset($personalData['street'])) {
-            $keys = [ 'street', 'city', 'country', 'zip', 'addressaddition', 'lastname'];
+            $keys = [ 'street', 'city', 'country', 'zip', 'addressaddition', 'lastname', 'telephonenumber'];
             foreach ($keys AS $origKey) {
                 if ($origKey !== 'lastname') {
                     $personalData['billing_' . $origKey] = (!empty($personalData[$origKey])) ? $personalData[$origKey] : $personalData['shipping_' . $origKey];
@@ -149,6 +156,24 @@ class Mopt_PayoneUserHelper
                 }
                 unset($personalData[$origKey]);
             }
+            $personalData['shipping_telephonenumber'] = $personalData['billing_telephonenumber'];
+        }
+        // paydirekt express uses streetname and streetnumber as keys so we merge them to street
+        // also user email is read from buyer_email instead of email
+        if (isset($personalData['billing_streetname'])) {
+            $keys = [ 'streetname'];
+            foreach ($keys AS $origKey) {
+                if ($origKey === 'streetname') {
+                    $personalData['billing_street'] = $personalData['billing_streetname'] . ' ' . $personalData['billing_streetnumber'] ;
+                    $personalData['shipping_street'] = $personalData['shipping_streetname'] . ' ' . $personalData['shipping_streetnumber'] ;
+                    unset($personalData['billing_streetname']);
+                    unset($personalData['billing_streetnumber']);
+                    unset($personalData['shipping_streetname']);
+                    unset($personalData['shipping_streetnumber']);
+                }
+            }
+            $personalData['email'] = $personalData['buyer_email'];
+            unset($personalData['buyer_email']);
         }
         // enable special state handling for paypal express
         $paymentHelper = Mopt_PayoneMain::getInstance()->getPaymentHelper();
@@ -159,8 +184,6 @@ class Mopt_PayoneUserHelper
         $register['billing']['city']           = $personalData['billing_city'];
         $register['billing']['country']        = $this->moptPayone__helper->getCountryIdFromIso($personalData['billing_country']);
         if (!empty($personalData['billing_state']) && $personalData['billing_state'] !== 'Empty') {
-            // $register['billing']['stateID']      = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
-            // $register['billing']['state'] = $personalData['billing_state'];
             // first try to get state by countryId, then by name
             $state = $this->moptPayone__helper->getStateFromId($register['billing']['country'], $personalData['billing_state'], $isPaypalECS);
             if (empty($state)) {
@@ -175,9 +198,11 @@ class Mopt_PayoneUserHelper
         $register['billing']['firstname']      = $personalData['billing_firstname'];
         $register['billing']['lastname']       = $personalData['billing_lastname'];
         if ($isPhoneMandatory) {
-            $register['billing']['phone'] = !empty($personalData['telephonenumber']) ? $personalData['telephonenumber'] : '00000000';
+            $register['billing']['phone'] = !empty($personalData['billing_telephonenumber']) ? $personalData['billing_telephonenumber'] : '00000000';
+            $register['shipping']['phone'] = !empty($personalData['shipping_telephonenumber']) ? $personalData['shipping_telephonenumber'] : '00000000';
         } else {
-            $register['billing']['phone'] = $personalData['telephonenumber'];
+            $register['billing']['phone'] = $personalData['billing_telephonenumber'];
+            $register['shipping']['phone'] = $personalData['shipping_telephonenumber'];
         }
 
         $register['billing']['salutation']     = 'mr';
@@ -201,8 +226,6 @@ class Mopt_PayoneUserHelper
         $register['shipping']['city']         = $personalData['shipping_city'];
         $register['shipping']['country']      = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
         if ($personalData['shipping_state'] !== 'Empty') {
-            // $register['billing']['stateID'] = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
-            // $register['shipping']['state'] = $personalData['shipping_state'];
             $shippingState = $this->moptPayone__helper->getStateFromId($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
             if (empty($shippingState)) {
                 $register['shipping']['state'] = $this->moptPayone__helper->getStateFromStatename($register['shipping']['country'], $personalData['shipping_state'], $isPaypalECS);
@@ -257,9 +280,10 @@ class Mopt_PayoneUserHelper
         $address = $customer->getDefaultBillingAddress();
 
         /** @var \Shopware\Models\Country\Country $country */
-        // $country = $address->getCountry();
         $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $billingData['country'] ));
+        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $billingData['state'] ));
         $billingData['country'] = $country;
+        $billingData['state'] = $countryState;
         $address->fromArray($billingData);
 
         Shopware()->Container()->get('shopware_account.address_service')->update($address);
@@ -317,6 +341,27 @@ class Mopt_PayoneUserHelper
         $paymentHelper = new Mopt_PayonePaymentHelper();
         $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
         $oldUserData = $this->admin->sGetUserData();
+
+        // TODO: test missing changes from PR #418 Devolo Amazonpay changes
+        if ($paymentName === 'mopt_payone__ewallet_amazon_pay' && array_key_exists('shipping_pobox', $personalData) && !empty($personalData['shipping_pobox'])) {
+            $personalData['shipping_company'] = $personalData['shipping_pobox'];
+        }
+
+        if  ($paymentName === 'mopt_payone__ewallet_amazon_pay' &&
+            array_key_exists('shipping_company', $personalData) &&
+            !empty($personalData['shipping_company']) &&
+            preg_match('~[0-9]+~', $personalData['shipping_company'])) {
+            $personalData['shipping_addressaddition'] = $personalData['shipping_company'];
+            unset($personalData['shipping_company']);
+        }
+
+        if  ($paymentName === 'mopt_payone__ewallet_amazon_pay' &&
+            array_key_exists('shipping_company', $personalData) &&
+            !empty($personalData['shipping_company']) &&
+            preg_match('~c/o~', $personalData['shipping_company'])) {
+            $personalData['shipping_addressaddition'] = $personalData['shipping_company'];
+            unset($personalData['shipping_company']);
+        }
 
         // in some cases the api does not provide billing address data when using amazonpay
         // since the user is already logged in use existing billing address instead
@@ -400,15 +445,24 @@ class Mopt_PayoneUserHelper
         return true;
     }
 
+    /**
+     * @param Payone_Api_Response_Genericpayment_Ok $apiResponse
+     * @param int $paymentId
+     * @param $session
+     * @return bool $success
+     * @throws Enlight_Exception
+     */
     public function createOrUpdateUser($apiResponse, $paymentId, $session)
     {
         $payData = $apiResponse->getPaydata()->toAssocArray();
 
         if (!$this->isUserLoggedIn($session)) {
-            $this->createUserWithoutAccount($apiResponse, $paymentId);
+            $success = $this->createUserWithoutAccount($payData, $paymentId, $session);
         } else {
             $user = $this->updateUserAddresses($payData, $session, $paymentId);
         }
+
+        return $success;
 
         //StefL check if necessary
         //Shopware()->Session()->sPaymentID = $session->moptPaypayEcsPaymentId;
@@ -422,21 +476,6 @@ class Mopt_PayoneUserHelper
 
         // STEF: PPE /PP
         // return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
-    }
-
-    protected function createrOrUpdateAndForwardUser($apiResponse, $paymentId, $session)
-    {
-        $payData = $apiResponse->getPaydata()->toAssocArray();
-
-        if ($this->isUserLoggedIn($session)) {
-            $user = $this->updateUserAddresses($payData, $session, $paymentId);
-            if ($user === null) {
-                return $this->ecsAbortAction();
-            }
-        } else {
-            $this->createUserWithoutAccount($payData, $session, $paymentId);
-        }
-
     }
 
     /**
@@ -497,8 +536,7 @@ class Mopt_PayoneUserHelper
      */
     public function getBasketAmount($userData)
     {
-        $moptPayoneMain = Shopware()->Container()->get('plugins')->Frontend()->MoptPaymentPayone()->get('MoptPayoneMain');
-        $basket = $moptPayoneMain->sGetBasket();
+        $basket = $this->moptPayone__main->sGetBasket();
 
         if (empty($userData['additional']['charge_vat'])) {
             return $basket['AmountNetNumeric'];
@@ -545,4 +583,103 @@ class Mopt_PayoneUserHelper
         }
     }
 
+    /**
+     * checks if billing country is allowed in
+     * "Configuration->Basic Settings->Shop Settings->Countries"
+     * @param string $countryId
+     * @return bool
+     */
+    public function isBillingCountryAllowed($countryId)
+    {
+        $country = $this->moptPayone__main->getPaymentHelper()->getCountryFromId($countryId);
+        return $country->getActive();
+    }
+
+    /**
+     * checks if shipping country is allowed in
+     * "Configuration->Basic Settings->Shop Settings->Countries"
+     * @param string $countryId
+     * @return bool
+     */
+    public function isShippingCountryAllowed($countryId)
+    {
+        $country = $this->moptPayone__main->getPaymentHelper()->getCountryFromId($countryId);
+        return $country->getAllowShipping();
+    }
+
+    /**
+     * checks if shipping country is assigned to payment
+     *
+     * @param string $countryId
+     * @param int $paymentId
+     * @return bool
+     */
+    public function isShippingCountryAssignedToPayment($countryId, $paymentId)
+    {
+        $countries = $this->moptPayone__main->getPaymentHelper()
+            ->moptGetCountriesAssignedToPayment($paymentId);
+
+        if (count($countries) == 0) {
+            return true;
+        }
+
+        if (in_array($countryId, array_column($countries, 'countryID'))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @param int $paymentId
+     * @param int $subshopID
+     * @return bool
+     */
+    public function isPaymentAssignedToSubshop($paymentId, $subshopID)
+    {
+        return $this->moptPayone__main->getPaymentHelper()->isPaymentAssignedToSubshop($paymentId, $subshopID);
+    }
+
+
+    /**
+     * @param array $register
+     * @param int $paymentId
+     * @param $session
+     * @return bool
+     */
+    public function checkAllowedCountries(array $register, $paymentId, $session)
+    {
+        // Check if Billing Country is enabled in backend country config
+        if (!$this->isBillingCountryAllowed($register['billing']['country'])) {
+            $session->moptPayoneUserHelperError = true;
+            $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('moptPayoneBillingCountryNotSupported');
+        }
+
+        // Check if Shipping Country is allowed in backend country config
+        if (!$this->isShippingCountryAllowed($register['shipping']['country'])) {
+            $session->moptPayoneUserHelperError = true;
+            $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('moptPayoneShippingCountryNotSupported');
+        }
+        // Check if Shipping Country is assigned to payment
+        if (!$this->isShippingCountryAssignedToPayment($register['shipping']['country'], $paymentId)) {
+            $session->moptPayoneUserHelperError = true;
+            $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('moptPayoneShippingCountryNotAssigedToPayment');
+        }
+
+        // Check if the Subshop is assigned to PPE
+        if (!$this->isPaymentAssignedToSubshop($paymentId, Shopware()->Container()->get('shop')->getId())) {
+            $session->moptPayoneUserHelperError = true;
+            $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('moptPayonePaymentNotAssigedToSubshop');
+        }
+
+        return ! $session->moptPayoneUserHelperError;
+    }
 }

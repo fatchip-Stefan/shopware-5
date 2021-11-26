@@ -918,6 +918,18 @@ class Mopt_PayonePaymentHelper
         return $country;
     }
 
+    /**
+     * @param int $id
+     * @return object|\Shopware\Models\Country\Country|null
+     */
+    public function getCountryFromId($id)
+    {
+        /** @var  $entityManager \Shopware\Components\Model\ModelManager*/
+        $entityManager = Shopware()->Container()->get('models');
+        $country = $entityManager->getRepository('Shopware\Models\Country\Country')->findOneBy(array('id' => $id));
+        return $country;
+    }
+
     public function moptGetShippingCountriesAssignedToPayment($paymentId)
     {
         $sql = 'SELECT s_premium_dispatch_countries.countryID, s_core_countries.countryname, s_core_countries.countryiso '

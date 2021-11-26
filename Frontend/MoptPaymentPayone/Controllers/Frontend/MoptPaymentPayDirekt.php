@@ -1,13 +1,19 @@
 <?php
 
+use Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog;
+
 class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Controllers_Frontend_Payment
 {
 
     protected $moptPayone__serviceBuilder = null;
     /** @var Mopt_PayoneMain $moptPayone__main */
     protected $moptPayone__main = null;
+    /** @var Mopt_PayoneHelper $moptPayone__helper */
     protected $moptPayone__helper = null;
+    /** @var Mopt_PayonePaymentHelper $moptPayone__paymentHelper */
     protected $moptPayone__paymentHelper = null;
+    /** @var Mopt_PayoneUserHelper $payoneUserHelper */
+    protected $payoneUserHelper = null;
     protected $admin;
 
     /**
@@ -19,6 +25,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $this->moptPayone__main = $this->Plugin()->Application()->MoptPayoneMain();
         $this->moptPayone__helper = $this->moptPayone__main->getHelper();
         $this->moptPayone__paymentHelper = $this->moptPayone__main->getPaymentHelper();
+        $this->payoneUserHelper = $this->moptPayone__main->getUserHelper();
         $this->admin = Shopware()->Modules()->Admin();
 
         $this->Front()->Plugins()->ViewRenderer()->setNoRender();
@@ -40,8 +47,8 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $basket['sShippingcostsNet'] = $shippingCosts['netto'];
         $basket['sShippingcostsTax'] = $shippingCosts['tax'];
 
-        $userData = $this->getUserData();
-        $amount = $this->getBasketAmount($userData);
+        $userData = $this->payoneUserHelper->getUserData();
+        $amount =  $this->payoneUserHelper->getBasketAmount($userData);
 
         $amountWithShipping = $amount + $shippingCosts['brutto'];
 
@@ -64,7 +71,6 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $basketParams = $paramBuilder->getInvoicing($basket, true, $userData);
         $request->setInvoicing($basketParams);
         // Response with new workorderid and redirect-url to paydirekt
-
         $response = $service->request($request);
 
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
@@ -95,8 +101,8 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $paymentId = Shopware()->Container()->get('MoptPayoneMain')->getPaymentHelper()->getPaymentPaydirektExpress()->getId();
         $paramBuilder = $this->moptPayone__main->getParamBuilder();
 
-        $userData = $this->getUserData();
-        $amount = $this->getBasketAmount($userData);
+        $userData = $this->payoneUserHelper->getUserData();
+        $amount = $this->payoneUserHelper->getBasketAmount($userData);
 
         $expressCheckoutRequestData = $paramBuilder->buildPaydirektExpressGetStatus(
             $paymentId,
@@ -112,7 +118,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $builder = $this->moptPayone__serviceBuilder;
         $service = $builder->buildServicePaymentGenericpayment();
         $service->getServiceProtocol()->addRepository(Shopware()->Models()->getRepository(
-            'Shopware\CustomModels\MoptPayoneApiLog\MoptPayoneApiLog'
+            MoptPayoneApiLog::class
         ));
 
         $response = $service->request($request);
@@ -120,9 +126,13 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         $session['sPaymentID'] = $paymentId;
 
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::OK) {
-            $session = Shopware()->Session();
             $session->offsetSet('moptFormSubmitted', true);
-            $this->createrOrUpdateAndForwardUser($response, $paymentId, $session);
+            $success = $this->payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
+            if ($success !== false) {
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+            } else {
+                return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
+            }
         } else {
             return $this->forward('paydirektexpressAbort');
         }
@@ -131,73 +141,17 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
     public function paydirektexpressAbortAction()
     {
         $session = Shopware()->Session();
-        $session->moptPaydirektExpressError = true;
+        $session->moptPayoneUserHelperError = true;
+        $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+            ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+            ->get('errorMessageUserAbort');
         unset($session->moptPaydirektExpressWorkerId);
         unset($session->moptBasketChanged);
 
         return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
     }
 
-    /**
-     * get complete user-data as array to use in view
-     *
-     * @return array
-     */
-    protected function getUserData()
-    {
-        $system = Shopware()->System();
-        $userData = Shopware()->Modules()->Admin()->sGetUserData();
-        $countryShipping = $userData['additional']['countryShipping'];
-
-        if (empty($countryShipping)) {
-            return $userData;
-        }
-
-        $sTaxFree = (
-            !empty($countryShipping['taxfree']) ||
-            !empty($countryShipping['taxfree_ustid']) &&
-            !empty($userData['billingaddress']['ustid'])
-        );
-
-        $system->sUSERGROUPDATA = Shopware()->Db()->fetchRow(
-            'SELECT * FROM s_core_customergroups
-              WHERE groupkey = ?',
-            array($system->sUSERGROUP)
-        );
-
-        $userData['additional']['show_net'] = false;
-        $userData['additional']['charge_vat'] = false;
-        Shopware()->Session()->offsetSet('sOutputNet', true);
-
-        if (!empty($sTaxFree)) {
-            $system->sUSERGROUPDATA['tax'] = 0;
-            $this->container->get('config')->offsetSet('sARTICLESOUTPUTNETTO', 1);
-            Shopware()->Session()->offsetSet('sUserGroupData', $system->sUSERGROUPDATA);
-        } else {
-            $userData['additional']['charge_vat'] = true;
-            $userData['additional']['show_net'] = !empty($system->sUSERGROUPDATA['tax']);
-            Shopware()->Session()->offsetSet('sOutputNet', empty($system->sUSERGROUPDATA['tax']));
-        }
-
-        return $userData;
-    }
-
-    /**
-     * Return the full amount to pay.
-     *
-     * @return float
-     */
-    protected function getBasketAmount($userData)
-    {
-        $basket = $this->moptPayone__main->sGetBasket();
-
-        if (empty($userData['additional']['charge_vat'])) {
-            return $basket['AmountNetNumeric'];
-        }
-
-        return empty($basket['AmountWithTaxNumeric']) ? $basket['AmountNumeric'] : $basket['AmountWithTaxNumeric'];
-    }
-
+    /*
     protected function createrOrUpdateAndForwardUser($apiResponse, $paymentId, $session)
     {
         $payData = $apiResponse->getPaydata()->toAssocArray();
@@ -216,7 +170,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
 
         Shopware()->Session()->sPaymentID = $session->moptPaydirektExpressPaymentId;
 
-        $user = $this->getUserData();
+        $user = $this->payoneUserHelper->getUserData();
         //set user data
         $user['additional']['charge_vat'] = true;
         //set payment id
@@ -224,16 +178,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
 
         return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
     }
-
-    /**
-     * Checks if user is logged in
-     * @param $session
-     * @return bool
-     */
-    protected function isUserLoggedIn($session)
-    {
-         return (isset($session->sUserId) && !empty($session->sUserId));
-    }
+*/
 
     /**
      * create / register user without login
@@ -512,33 +457,6 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
     }
 
     /**
-     * Updates the billing address
-     *
-     * @param int $userId
-     * @param array $billingData
-     */
-    private function updateBilling($userId, $billingData)
-    {
-        /** @var \Shopware\Components\Model\ModelManager $em */
-        $em = $this->get('models');
-
-        /** @var \Shopware\Models\Customer\Customer $customer */
-        $customer = $em->getRepository('Shopware\Models\Customer\Customer')->findOneBy(array('id' => $userId));
-
-        /** @var \Shopware\Models\Customer\Address $address */
-        $address = $customer->getDefaultBillingAddress();
-
-         /** @var \Shopware\Models\Country\Country $country */
-        $country = $em->getRepository('\Shopware\Models\Country\Country')->findOneBy(array('id' => $billingData['country'] ));
-        $countryState = $em->getRepository('\Shopware\Models\Country\State')->findOneBy(array('id' => $billingData['state'] ));
-        $billingData['country'] = $country;
-        $billingData['state'] = $countryState;
-        $address->fromArray($billingData);
-
-        $this->get('shopware_account.address_service')->update($address);
-    }
-
-    /**
      * Updates the shipping address
      *
      * @param int $userId
@@ -570,24 +488,6 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         } else {
             $this->get('shopware_account.address_service')->update($address);
         }
-    }
-
-    /**
-     * Endpoint for changing the main profile data
-     */
-    public function updateCustomer($data, $paymentId)
-    {
-        unset ($data['shipping']);
-        unset ($data['billing']);
-
-        $userId = $this->get('session')->get('sUserId');
-
-        $customer = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')->findOneBy(
-		array('id' =>  $userId)
-		);
-        $customer->fromArray($data);
-        $customer->setPaymentId($paymentId);
-        Shopware()->Container()->get('shopware_account.customer_service')->update($customer);
     }
 
     /**
