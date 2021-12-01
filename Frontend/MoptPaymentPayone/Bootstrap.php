@@ -877,7 +877,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'parent' => $item,
         ));
         $this->createMenuItem(array(
-            'label' => 'Payone PayPal',
+            'label' => 'Payone PayPal Express',
             'controller' => 'MoptPayonePaypal',
             'action' => 'Index',
             'class' => 'sprite-locale',
