@@ -135,13 +135,13 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
 
     public function paypalexpressAction()
     {
-        $response = $this->mopt_payone__paypal();
+        $response = $this->mopt_payone__paypal(true);
         $this->mopt_payone__handleDirectFeedback($response);
     }
 
     public function paypalAction()
     {
-        $response = $this->mopt_payone__paypal();
+        $response = $this->mopt_payone__paypal(false);
 
         if (Shopware()->Session()->moptPaypalEcsWorkerId) {
             $this->mopt_payone__handleDirectFeedback($response);
@@ -329,9 +329,12 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     }
 
     /**
+     *
+     * @param bool $isPaypalExpress
+     *
      * @return Payone_Api_Response_Authorization_Approved|Payone_Api_Response_Preauthorization_Approved|Payone_Api_Response_Error|Payone_Api_Response_Invalid $response
      */
-    protected function mopt_payone__paypal()
+    protected function mopt_payone__paypal($isPaypalExpress = false)
     {
         $config = $this->moptPayoneMain->getPayoneConfig($this->getPaymentId());
         $recurringOrder = false;
@@ -348,15 +351,15 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
             $forceAuthorize = false;
         }
 
-        if (Shopware()->Session()->moptPaypalEcsWorkerId) {
-            $moptPaypalEcsWorkerId = Shopware()->Session()->moptPaypalEcsWorkerId;
+        if ($isPaypalExpress) {
+            $workOrderId = Shopware()->Session()->moptPaypalExpressWorkorderId;
             $payment = $this->moptPayoneMain->getParamBuilder()->getPaymentPaypalEcs($this->Front()->Router());
         } else {
             $payment = $this->moptPayoneMain->getParamBuilder()->getPaymentPaypal($this->Front()->Router(), $isInitialRecurringRequest);
-            $moptPaypalEcsWorkerId = false;
+            $workOrderId = false;
         }
 
-        $response = $this->buildAndCallPayment($config, 'wlt', $payment, $moptPaypalEcsWorkerId, $recurringOrder, $isInitialRecurringRequest, $forceAuthorize);
+        $response = $this->buildAndCallPayment($config, 'wlt', $payment, $workOrderId, $recurringOrder, $isInitialRecurringRequest, $forceAuthorize);
 
         return $response;
     }
@@ -957,8 +960,8 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
                 $session->moptClearingData = $clearingData;
             }
 
-            if ($session->moptPaypalEcsWorkerId) {
-                unset($session->moptPaypalEcsWorkerId);
+            if ($session->moptPaypalExpressWorkorderId) {
+                unset($session->moptPaypalExpressWorkorderId);
             }
 
             if ($session->moptMandateData) {

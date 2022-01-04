@@ -773,7 +773,7 @@ class AddressCheck implements SubscriberInterface
         $shippingAddressData = $userData['shippingaddress'];
         $shippingAddressData['country'] = $shippingAddressData['countryID'];
         $session = Shopware()->Session();
-        unset(Shopware()->Session()->moptPaypalEcsWorkerId);
+        unset(Shopware()->Session()->moptPaypalExpressWorkorderId);
         $userId = $session->sUserId;
 
         if ($this->getCustomerCheckIsNeeded($config, $userId, $basketValue, false)) {

@@ -452,6 +452,9 @@ class Mopt_PayonePaymentHelper
      */
     public function isPayonePaypal($paymentName)
     {
+        if ($this->isPayonePaypalExpress($paymentName)) {
+            return false;
+        }
         return preg_match('#mopt_payone__ewallet_paypal#', $paymentName) ? true : false;
     }
 

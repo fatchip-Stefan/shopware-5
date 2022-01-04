@@ -101,18 +101,7 @@ class FrontendCheckout implements SubscriberInterface
         ) {
             return;
         }
-
-        // Set redirect flag
-        if (isset(Shopware()->Session()->moptPaypalInstallmentWorkerId) || isset(Shopware()->Session()->moptPaydirektExpressWorkerId) ||
-            isset(Shopware()->Session()->moptPaypalEcsWorkerId) || isset(Shopware()->Session()->moptPayolutionInstallmentWorkerId)
-        )
-        {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
-
-        if ($this->container->get('MoptPayoneMain')->getPaymentHelper()->isPayoneRatepayInstallment($userData['additional']['payment']['name'])) {
-            Shopware()->Session()->moptBasketChanged = true;
-        }
+        Shopware()->Session()->moptBasketChanged = true;
         $arguments->setReturn($ret);
     }
 
@@ -209,10 +198,6 @@ class FrontendCheckout implements SubscriberInterface
             if ($session->moptAmazonLogout) {
                 $view->assign('moptAmazonLogout', $session->moptAmazonLogout);
                 unset($session->moptAmazonLogout);
-            }
-            /* @see https://integrator.payone.de/jira/browse/SW-236 */
-            if ($session->moptPaypalEcsWorkerId) {
-                unset($session->moptPaypalEcsWorkerId);
             }
 
             // Klarna

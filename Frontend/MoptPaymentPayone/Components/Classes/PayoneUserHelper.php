@@ -393,7 +393,7 @@ class Mopt_PayoneUserHelper
         }
         // amazonpay: check if original billingaddress is the same as shipping address
         // in this case add a new shipping address
-        if ($paymentName === 'mopt_payone__ewallet_amazon_pay' && $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
+        if (($paymentName === 'mopt_payone__ewallet_amazon_pay' || $paymentName === 'mopt_payone__ewallet_paypal_express' ) && $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
             $this->saveSeperateShippingAddress($personalData, $session);
         } else {
             $updated = $this->updateShippingAddress($personalData, $session);
