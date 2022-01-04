@@ -1575,7 +1575,11 @@ class Mopt_PayonePaymentHelper
     public function getPaymentPaydirektExpress()
     {
         $paymentPaydirektexpress = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            ['name' => 'mopt_payone__ewallet_paydirekt_express']
+            [
+                'name' => 'mopt_payone__ewallet_paydirekt_express',
+                'active' => true,
+                'shops' => Shopware()->Shop()->getId(),
+            ]
         );
         return $paymentPaydirektexpress;
     }
@@ -1587,9 +1591,14 @@ class Mopt_PayonePaymentHelper
      */
     public function getPaymentAmazonPay()
     {
-        $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            ['name' => 'mopt_payone__ewallet_amazon_pay']
+        $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findBy(
+            [
+                'name' => 'mopt_payone__ewallet_amazon_pay',
+                'active' => true,
+                // 'shops' => Shopware()->Shop()->getId(),
+            ]
         );
+
         return $paymentAmazonPay;
     }
 
@@ -1615,7 +1624,11 @@ class Mopt_PayonePaymentHelper
     public function isAmazonPayEnabled()
     {
         $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            ['name' => 'mopt_payone__ewallet_amazon_pay']
+            [
+                'name' => 'mopt_payone__ewallet_amazon_pay',
+                'shops' => Shopware()->Shop()->getId(),
+
+            ]
         );
         return $paymentAmazonPay->getActive();
     }
