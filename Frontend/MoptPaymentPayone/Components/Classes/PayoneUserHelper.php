@@ -13,6 +13,7 @@ class Mopt_PayoneUserHelper
      * @var Shopware\Components\DependencyInjection\Container
      */
     protected $container;
+    protected $moptPayone__main = null;
     protected $moptPayone__helper = null;
     protected $admin;
 
@@ -213,7 +214,7 @@ class Mopt_PayoneUserHelper
             $register['personal']['customer_type'] = 'private';
         }
         $register['personal']['email']         = $personalData['email'];
-        $register['personal']['firstname']     = $personalData['shipping_firstname'];
+        $register['personal']['firstname']     = $personalData['billing_firstname'];
         $register['personal']['lastname']      = $personalData['billing_lastname'];
         $register['personal']['salutation']    = 'mr';
         $register['personal']['skipLogin']     = 1;
