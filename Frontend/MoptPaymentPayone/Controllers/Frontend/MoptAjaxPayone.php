@@ -1247,8 +1247,11 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
         $this->container->get('front')->Plugins()->ViewRenderer()->setNoRender();
 
         $token = $this->request->getParam('authorizationToken');
+        $finalizeRequired = $this->request->getParam('finalize_required');
 
         $this->session->offsetSet('mopt_klarna_authorization_token', $token);
+        $this->session->offsetSet('mopt_klarna_finalize_required', $finalizeRequired);
+        $this->session->offsetSet('mopt_klarna_finalize_required', "true");
     }
 
     public function startKlarnaSessionAction()
@@ -1275,9 +1278,9 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
         if ($result->getStatus() === 'ERROR') {
             echo json_encode([
                 'status' => $result->getStatus(),
-                'errorCode' => $result->getErrorcode(),
-                'errorMessage' => $result->getErrormessage(),
-                'customerMessage' => $result->getCustomermessage(),
+                'customerMessage' => Shopware()->Snippets()
+                    ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                    ->get('klarnaStartSessionError'),
             ]);
         } else {
             $clientToken = $result->getPaydata()->toAssocArray()['client_token'];
@@ -1289,27 +1292,11 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
                 'status' => $result->getStatus(),
                 'client_token' => $clientToken,
                 'paymentId' => $paymentId,
+                'authErrorMessage' => Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('klarnaAuthError'),
             ]);
         }
-    }
-
-    public function updateKlarnaLegalLinksAction()
-    {
-        try {
-            $this->Front()->Plugins()->ViewRenderer()->setNoRender();
-        } catch (Exception $e) {
-        }
-
-        $country = $this->Request()->getParam('country');
-        $paymentid = $this->Request()->getParam('paymentid');
-
-        $klarnaConfig = $this->moptPayoneMain->getPayoneConfig($paymentid);
-        $klarnaLegalInformation = $this->moptPayoneMain->getPaymentHelper()
-            ->moptGetKlarnaAdditionalInformation($country, $klarnaConfig['klarnaStoreId']);
-
-        echo json_encode(
-            $klarnaLegalInformation
-        );
     }
 
     public function unsetSessionVarsAction()

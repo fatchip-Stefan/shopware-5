@@ -53,8 +53,20 @@
 
         init: function () {
             var me = this;
-
             me.registerEventListeners();
+
+            // load the klarna widget when payment is preselected
+            var checkedRadioId = $('input[name=payment]:checked', '#shippingPaymentForm').attr('id')
+            var paymentId = 'notset';
+
+            if (me.data['klarnaGrouped'] == "1") {
+                paymentId = $('#mopt_payone__klarna_paymenttype option:selected').attr('mopt_payone__klarna_paymentid');
+            } else {
+                paymentId = $('#mopt_payone_klarna_paymentid').val();
+           }
+            if (((checkedRadioId === 'payment_meanmopt_payone_klarna' && paymentId !== 'notset'  )|| checkedRadioId === 'payment_mean'+paymentId)) {
+                me.inputChangeHandler();
+            }
         },
 
         update: function () {
@@ -181,16 +193,16 @@
                     me.paymentId = $('#mopt_payone_klarna_paymentid').val();
                 }
                 me.financingtype = $("#mopt_payone__klarna_paymenttype").val();
-                var $gdpr_agreement = $('#mopt_payone__klarna_agreement');
                 var loadWidgetIsAllowed =
                     me.financingtype
                     && me.birthdate
                     && me.personalId
                     && me.paymentId
                     && ((String)(me.billingAddressPhone)).length >= 5
-                    && $gdpr_agreement.is(':checked');
 
                 if (loadWidgetIsAllowed) {
+
+                    $('#payone-klarna-error').hide();
 
                     // startKlarnaSessionCall is a PO call and needs no minus delimiter
                     var birthdate = me.birthdate.replace(/-/g, '');
@@ -203,40 +215,38 @@
                         me.personalId = '';
                     }
 
-                    me.startKlarnaSessionCall(me.financingtype, birthdate, me.billingAddressPhone, me.personalId, me.paymentId).done(function (response) {
-                        response = $.parseJSON(response);
+                    me.startKlarnaSessionCall(me.financingtype, birthdate, me.billingAddressPhone, me.personalId, me.paymentId).done(function (jsonResponse) {
+                        var response = $.parseJSON(jsonResponse);
+
+                        if (response['status'] === 'ERROR') {
+                            $('#mopt_payone__klarna_agreement').prop('checked', false);
+                            $('#payone-klarna-error-message').text(response['customerMessage']);
+                            $('#payone-klarna-error').show();
+                            $(me.$el.get(0).elements).filter(':submit').each(function (_, element) {
+                                element.disabled = true;
+                            });
+                            return;
+                        }
+
+                        $(me.$el.get(0).elements).filter(':submit').each(function (_, element) {
+                            element.disabled = false;
+                        });
                         $('#payment_meanmopt_payone_klarna').val(response['paymentId']);
 
                         me.loadKlarnaWidget(me.financingtype, response['client_token']).done(function () {
+                            // replace error translation text for displaying a general error on auth
+                            $('#payone-klarna-error-message').text(response['authErrorMessage']);
                             if (!me.submitPressed) {
                                 return;
                             }
-
                             me.authorize();
                         });
                     });
                 }
             };
-            if (me.data['klarnaGrouped'] == "1") {
-                me.getKlarnaLegalLinks().done(function (response) {
-                    var result = $.parseJSON(response);
-                    $('#mopt_payone__klarna_consent').html(result.consent);
-                    $('#mopt_payone__klarna_legalterm').html(result.legalTerm);
-                });
-            }
             me.unloadKlarnaWidget().done(function () {
                 afterUnloadKlarnaWidget()
             });
-        },
-
-        getKlarnaLegalLinks: function () {
-            var me = this;
-            var url = me.data['updateKlarnaLegalLinks-Url'];
-            var parameters = {
-                'country' : me.data['billingAddress-Country'],
-                'paymentid' : $('#mopt_payone__klarna_paymenttype option:selected').attr('mopt_payone__klarna_paymentid')
-            };
-            return $.ajax({method: "POST", url: url, data: parameters});
         },
 
         startKlarnaSessionCall: function (financingtype, birthdate, phoneNumber, personalId, paymentId) {
@@ -259,7 +269,8 @@
                 'vars': [
                     'mopt_klarna_client_token',
                     'mopt_klarna_authorization_token',
-                    'mopt_klarna_workorderid'
+                    'mopt_klarna_workorderid',
+                    'mopt_klarna_finalize_required',
                 ]
             }
 
@@ -332,7 +343,6 @@
                     national_identification_number: me.personalId
                 }
             };
-
             window.Klarna.Payments.authorize({
                     payment_method_category: payType,
                     auto_finalize: isAutoFinalize
@@ -345,7 +355,7 @@
                         me.authorizeApproved = true;
 
                         if (res['authorization_token']) {
-                            var parameters = {'authorizationToken': res['authorization_token']};
+                            var parameters = {'authorizationToken': res['authorization_token'], 'finalize_required': res['finalize_required']};
 
                             // store authorization_token
                             $.ajax({method: "POST", url: url, data: parameters, async: false});
@@ -354,6 +364,8 @@
                         me.$el.submit();
 
                     } else {
+                        $('#mopt_payone__klarna_agreement').prop('checked', false);
+                        $('#payone-klarna-error').show();
                         $(me.$el.get(0).elements).filter(':submit').each(function (_, element) {
                             element.disabled = false;
                         });
