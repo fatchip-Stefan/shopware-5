@@ -1594,14 +1594,14 @@ class Mopt_PayonePaymentHelper
      */
     public function getPaymentAmazonPay()
     {
-        $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findBy(
+        $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
             [
                 'name' => 'mopt_payone__ewallet_amazon_pay',
                 'active' => true,
                 // 'shops' => Shopware()->Shop()->getId(),
+
             ]
         );
-
         return $paymentAmazonPay;
     }
 
