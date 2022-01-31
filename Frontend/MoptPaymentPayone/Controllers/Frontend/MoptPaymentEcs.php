@@ -60,8 +60,12 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
             $session->moptPaypalExpressWorkorderId = $response->getWorkorderId();
             $this->redirect($response->getRedirecturl());
+        } else if ($response->getStatus() === Payone_Api_Enum_ResponseType::ERROR) {
+            $this->forward('paypalexpressError');
+            exit();
         } else {
-            return $this->forward('paypalexpressAbort');
+            $this->forward('paypalexpressAbort');
+            exit();
         }
     }
 

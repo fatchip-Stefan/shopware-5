@@ -362,19 +362,7 @@ class FrontendPostDispatch implements SubscriberInterface
         }
 
         if (($controllerName == 'checkout' && $request->getActionName() == 'cart')) {
-            if ($moptPaymentHelper->isPayonePaydirektExpress($moptPaymentName)) {
-                if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
-                    unset($session->moptBasketChanged);
-                    unset($session->moptFormSubmitted);
-                    unset($session->moptPaydirektExpressWorkerId);
-                    $redirectnotice =
-                        'Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>'
-                        . 'Bitte wiederholen Sie die Zahlung.<br>';
-
-                    $view->assign('moptBasketChanged', true);
-                    $view->assign('moptOverlayRedirectNotice', $redirectnotice);
-                }
-            }
+            $this->redirectExpressPaymentsOnBasketChange($moptPaymentName);
         }
 
         // used by ratepay installments
@@ -970,4 +958,35 @@ class FrontendPostDispatch implements SubscriberInterface
         return $return;
     }
 
+    /**
+     * @param $paymentName
+     * @param $view
+     * @return void
+     */
+    protected function redirectExpressPaymentsOnBasketChange($paymentName, $view)
+    {
+        $session = Shopware()->Session();
+        $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
+        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_EXPRESS) && ($session->moptBasketChanged || $session->moptFormSubmitted !== true)) {
+            $this->unsetExpressPaymentSessionVars();
+            $redirectnotice =
+                'Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>'
+                . 'Bitte wiederholen Sie die Zahlung.<br>';
+
+            $view->assign('moptBasketChanged', true);
+            $view->assign('moptOverlayRedirectNotice', $redirectnotice);
+            return;
+        }
+
+    }
+
+    /**
+     * @return void
+     */
+    protected function unsetExpressPaymentSessionVars() {
+        $session = Shopware()->Session();
+        unset($session->moptBasketChanged);
+        unset($session->moptFormSubmitted);
+        unset($session->moptPaydirektExpressWorkerId);
+    }
 }

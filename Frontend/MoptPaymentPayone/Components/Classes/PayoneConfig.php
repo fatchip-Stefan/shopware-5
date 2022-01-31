@@ -127,6 +127,21 @@ class Mopt_PayoneConfig
         // 'mopt_payone__ewallet_applepay', applepay is handled seperately
     ];
 
+    // for these payments basket and address changes are not allowed
+    const PAYMENTS_EXPRESS = [
+        'mopt_payone__fin_ratepay_installment',
+        'mopt_payone__ewallet_paypal_express',
+        'mopt_payone__ewallet_paydirekt_express',
+    ];
+
+    // for these payments basket are not allowed after accepting installment conditions
+    const PAYMENTS_INSTALLMENTS = [
+        'mopt_payone__ewallet_amazon_pay',
+        'mopt_payone__fin_kis_klarna_installments',
+        'mopt_payone__fin_paypal_installment',
+        'mopt_payone__fin_payolution_installment',
+    ];
+
   /**
    * return array with configured valid IPs to accept transaction feedback from
    *
