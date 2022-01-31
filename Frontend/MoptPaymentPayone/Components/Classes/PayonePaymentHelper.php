@@ -1943,4 +1943,24 @@ class Mopt_PayonePaymentHelper
 
         return $payments;
     }
+
+    /**
+     * remove express and installment payments from
+     * payment lists on account page
+     *
+     * @param $payments array
+     * @return array
+     */
+    public function filterPaymentsInAccount($payments)
+    {
+        foreach ($payments as $index => $payment) {
+            foreach (Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_ACCOUNTPAGE as $exludedPayment) {
+                if (strpos($payment['name'], $exludedPayment) !== false) {
+                    unset($payments[$index]);
+                }
+            }
+        }
+
+        return $payments;
+    }
 }
