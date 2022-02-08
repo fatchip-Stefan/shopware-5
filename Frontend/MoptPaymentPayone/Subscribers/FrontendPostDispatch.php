@@ -124,7 +124,7 @@ class FrontendPostDispatch implements SubscriberInterface
          $paymentId = $view->sPayment['id'];
         // fallback to session if above does not work
         if (empty($paymentId)){
-            $paymentId = $this->container->get('session')->offsetGet('sPaymentID');
+            $paymentId = (int)$this->container->get('session')->offsetGet('sPaymentID');
         }
         /** @var Mopt_PayonePaymentHelper $moptPaymentHelper */
         $moptPaymentHelper = $this->container->get('MoptPayoneMain')->getPaymentHelper();
@@ -358,11 +358,16 @@ class FrontendPostDispatch implements SubscriberInterface
                     );
                 }
             }
-
         }
 
         if (($controllerName == 'checkout' && $request->getActionName() == 'cart')) {
-            $this->redirectExpressPaymentsOnBasketChange($moptPaymentName);
+            $this->redirectExpressPaymentsOnBasketChange($moptPaymentName, $view);
+            $this->redirectInstallmentPaymentsOnBasketChange($moptPaymentName, $view);
+        }
+
+        if (($controllerName == 'checkout' && $request->getActionName() == 'shippingPayment')) {
+            $this->redirectExpressPaymentsOnBasketChange($moptPaymentName, $view);
+            $this->redirectInstallmentPaymentsOnBasketChange($moptPaymentName, $view);
         }
 
         // used by ratepay installments
@@ -371,18 +376,6 @@ class FrontendPostDispatch implements SubscriberInterface
         // redirect express payments to checkout/cart
         // installment payments to shipping/payment on Address or basket changes
         if (($controllerName == 'checkout' && $request->getActionName() == 'shippingPayment')) {
-            if ($session->moptBasketChanged) {
-                unset($session->moptBasketChanged);
-                unset($session->moptPaypalInstallmentWorkerId);
-                unset($session->moptPaypalInstallmentData);
-                $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get('installmentsBasketChanged',"<div style='text-align: center'><b>Ratenzahlung<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte rufen Sie Ihre aktuellen Ratenzahlungskonditionen ab und wählen Sie den gewünschten Zahlplan aus.<br></b></div>");
-
-
-                $view->assign('moptBasketChanged', true);
-                $view->assign('moptOverlayRedirectNotice', $redirectnotice);
-            }
-
             if ($session->moptBillingCountryChanged) {
                 unset($session->moptBillingCountryChanged);
                 $redirectnotice =
@@ -392,7 +385,6 @@ class FrontendPostDispatch implements SubscriberInterface
                 $view->assign('moptBillingCountryChanged', true);
                 $view->assign('moptOverlayRedirectNotice', $redirectnotice);
             }
-
             if ($session->moptKlarnaAddressChanged) {
                 unset($session->moptKlarnaAddressChanged);
                 $redirectnotice =
@@ -964,6 +956,44 @@ class FrontendPostDispatch implements SubscriberInterface
     }
 
     /**
+     * @return void
+     */
+    protected function unsetExpressPaymentSessionVars() {
+        $session = Shopware()->Session();
+        unset($session->moptBasketChanged);
+        unset($session->moptFormSubmitted);
+        unset($session->moptPaydirektExpressWorkerId);
+    }
+
+    /**
+     * @return void
+     */
+    protected function unsetInstallmentPaymentSessionVars() {
+        $session = Shopware()->Session();
+        unset($session->moptBasketChanged);
+        unset($session->moptPaypalInstallmentWorkerId);
+        unset($session->moptPaypalInstallmentData);
+    }
+
+    /**
+     * @param $paymentName
+     * @param $view
+     * @return void
+     */
+    protected function  redirectInstallmentPaymentsOnBasketChange($paymentName, $view) {
+        $session = Shopware()->Session();
+        $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
+        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_INSTALLMENTS) && $session->moptBasketChanged) {
+            $this->unsetInstallmentPaymentSessionVars();
+            $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('installmentsBasketChanged',"<div style='text-align: center'><b>Ratenzahlung<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte rufen Sie Ihre aktuellen Ratenzahlungskonditionen ab und wählen Sie den gewünschten Zahlplan aus.<br></b></div>");
+
+            $view->assign('moptBasketChanged', true);
+            $view->assign('moptOverlayRedirectNotice', $redirectnotice);
+        }
+    }
+
+    /**
      * @param $paymentName
      * @param $view
      * @return void
@@ -974,24 +1004,12 @@ class FrontendPostDispatch implements SubscriberInterface
         $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
         if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_EXPRESS) && ($session->moptBasketChanged || $session->moptFormSubmitted !== true)) {
             $this->unsetExpressPaymentSessionVars();
-            $redirectnotice =
-                'Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>'
-                . 'Bitte wiederholen Sie die Zahlung.<br>';
-
+            $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('expressBasketChanged',"<div style='text-align: center'><b>Express Checkout<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte wiederholen Sie den Express Checkout oder wählen Sie eine andere Zahlart<br></b></div>");
             $view->assign('moptBasketChanged', true);
             $view->assign('moptOverlayRedirectNotice', $redirectnotice);
             return;
         }
 
-    }
-
-    /**
-     * @return void
-     */
-    protected function unsetExpressPaymentSessionVars() {
-        $session = Shopware()->Session();
-        unset($session->moptBasketChanged);
-        unset($session->moptFormSubmitted);
-        unset($session->moptPaydirektExpressWorkerId);
     }
 }

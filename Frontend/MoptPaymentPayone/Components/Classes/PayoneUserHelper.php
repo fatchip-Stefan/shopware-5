@@ -462,6 +462,7 @@ class Mopt_PayoneUserHelper
         } else {
             $user = $this->updateUserAddresses($payData, $session, $paymentId);
         }
+        Shopware()->Session()->sPaymentID = $paymentId;
 
         return $success;
 

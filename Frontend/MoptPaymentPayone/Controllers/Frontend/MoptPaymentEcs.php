@@ -86,7 +86,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
     public function paypalexpressAction()
     {
         $session = Shopware()->Session();
-        $paymentId = $session->moptPaypayEcsPaymentId;
+        $paymentId = (int)$session->moptPaypayEcsPaymentId;
         $paramBuilder = $this->moptPayone__main->getParamBuilder();
 
         $userData = $this->payoneUserHelper->getUserData();
@@ -119,14 +119,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             } else {
                 return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
             }
-        }
-
-        /* Check if this can be safely removed
-        elseif ($response->getStatus() === Payone_Api_Enum_ResponseType::REDIRECT) {
-            $session->moptPaypalEcsWorkerId = $response->getWorkorderId();
-            $this->redirect($response->getRedirecturl());
-        */
-        else {
+        } else {
             // TODO add error message
             return $this->forward('paypalexpressAbort');
         }
