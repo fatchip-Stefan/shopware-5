@@ -59,6 +59,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
      * registers the custom plugin models and plugin namespaces
      * @throws ReflectionException
      */
+
+    private $migratePaypalToPaypalExpresss = false;
+
     public function afterInit()
     {
         $this->registerCustomModels();
@@ -798,17 +801,26 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         // Add config field for trustly show iban bic setting.
         $this->getInstallHelper()->checkAndAddTrustlyShowIbanBic();
 
+        // enable paypal express after migration if it was enabled in paypal config
+        $this->getInstallHelper()->checkAndActivatePayPalExpress();
+
+        // migrate paypal country surcharge settings to paypal express
+        // $this->getInstallHelper()->checkAndUpdatePayPalExpressConfig();
+
+        // migrate paypal subshop settings to paypal express
+        // $this->getInstallHelper()->checkAndUpdatePayPalExpressConfig()
+
         // Add shop to paypal express config
-        $this->getInstallHelper()->checkAndUpdatePayPalShopModelExtension();
+        // $this->getInstallHelper()->checkAndUpdatePayPalShopModelExtension();
 
         // remove column is_default from paypal express config
         $this->getInstallHelper()->checkAndUpdatePayPalDefaultModelExtension();
 
         // remove column locale_id from paypal express config
-        $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
+        // $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
 
         // Applepay fileds
-        $this->getInstallHelper()->checkAndAddApplepayConfig();
+        // $this->getInstallHelper()->checkAndAddApplepayConfig();
     }
 
     /**

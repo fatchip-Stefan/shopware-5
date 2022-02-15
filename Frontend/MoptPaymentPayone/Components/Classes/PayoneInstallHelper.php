@@ -1980,5 +1980,27 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
         }
 
     }
+
+    /**
+     * @return void
+     */
+    function checkAndActivatePayPalExpress()
+    {
+        $payoneMain = new Mopt_PayoneMain();
+        /** @var Shopware\Models\Payment\Payment $payment */
+        $payment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(
+            array('name' => 'mopt_payone__ewallet_paypal')
+        );
+        if ($payment === null) {
+            return;
+        }
+        $active = $payment->getActive();
+        $paypalConfig = $payoneMain->getPayoneConfig($payment['id']);
+        if ($active && $paypalConfig['']) {
+            $payment->setActive($active);
+            Shopware()->Models()->persist($payment);
+            Shopware()->Models()->flush();
+        }
+    }
 }
 
