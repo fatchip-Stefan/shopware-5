@@ -27,8 +27,6 @@
  * @link            http://www.fatchip.com
  */
 
-
-$test = TRUE;
 use Shopware\Models\Payment\Payment;
 use Shopware\Models\Dispatch\Dispatch;
 use Doctrine\DBAL\Connection;
