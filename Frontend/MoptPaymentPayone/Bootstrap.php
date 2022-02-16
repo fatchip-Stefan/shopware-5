@@ -799,7 +799,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         $this->getInstallHelper()->checkAndAddTrustlyShowIbanBic();
 
         // Applepay fileds
-        // $this->getInstallHelper()->checkAndAddApplepayConfig();
+        $this->getInstallHelper()->checkAndAddApplepayConfig();
 
         /** @var Payment $payment */
         $paypalExpressPayment = $this->Payments()->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
