@@ -59,9 +59,6 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
      * registers the custom plugin models and plugin namespaces
      * @throws ReflectionException
      */
-
-    private $migratePaypalToPaypalExpresss = false;
-
     public function afterInit()
     {
         $this->registerCustomModels();
