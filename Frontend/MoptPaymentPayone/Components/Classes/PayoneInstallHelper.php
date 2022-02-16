@@ -1990,7 +1990,7 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
      */
     function migratePaypalSettings()
     {
-        $connection = Shopware()->Container()->get(Connection::class);
+        $connection = Shopware()->Container()->get('dbal_connection');
         $payoneMain = new Mopt_PayoneMain();
         /** @var Shopware\Models\Payment\Payment $paypalPayment */
         $paypalPayment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(['name' => 'mopt_payone__ewallet_paypal']);
