@@ -801,26 +801,24 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
         // Add config field for trustly show iban bic setting.
         $this->getInstallHelper()->checkAndAddTrustlyShowIbanBic();
 
-        // enable paypal express after migration if it was enabled in paypal config
-        $this->getInstallHelper()->checkAndActivatePayPalExpress();
+        // Applepay fileds
+        // $this->getInstallHelper()->checkAndAddApplepayConfig();
 
-        // migrate paypal country surcharge settings to paypal express
-        // $this->getInstallHelper()->checkAndUpdatePayPalExpressConfig();
-
-        // migrate paypal subshop settings to paypal express
-        // $this->getInstallHelper()->checkAndUpdatePayPalExpressConfig()
+        /** @var Payment $payment */
+        $paypalExpressPayment = $this->Payments()->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
+        if ($paypalExpressPayment) {
+            // migrate Shopware paypal settings, dispatch Settings and Payone Config settings to paypal express
+            $this->getInstallHelper()->migratePaypalSettings();
+        }
 
         // Add shop to paypal express config
-        // $this->getInstallHelper()->checkAndUpdatePayPalShopModelExtension();
+        $this->getInstallHelper()->checkAndUpdatePayPalShopModelExtension();
 
         // remove column is_default from paypal express config
         $this->getInstallHelper()->checkAndUpdatePayPalDefaultModelExtension();
 
         // remove column locale_id from paypal express config
-        // $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
-
-        // Applepay fileds
-        // $this->getInstallHelper()->checkAndAddApplepayConfig();
+        $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
     }
 
     /**

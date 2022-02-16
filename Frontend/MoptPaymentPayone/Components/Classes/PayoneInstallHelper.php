@@ -1,6 +1,5 @@
 <?php
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
-
 /**
  * This class handles:
  * installment, uninstallment
@@ -27,6 +26,13 @@
  * @license         <http://www.gnu.org/licenses/> GNU General Public License (GPL 3)
  * @link            http://www.fatchip.com
  */
+
+
+$test = TRUE;
+use Shopware\Models\Payment\Payment;
+use Shopware\Models\Dispatch\Dispatch;
+use Doctrine\DBAL\Connection;
+
 class Mopt_PayoneInstallHelper
 {
     /**
@@ -1984,21 +1990,54 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
     /**
      * @return void
      */
-    function checkAndActivatePayPalExpress()
+    function migratePaypalSettings()
     {
+        $connection = Shopware()->Container()->get(Connection::class);
         $payoneMain = new Mopt_PayoneMain();
-        /** @var Shopware\Models\Payment\Payment $payment */
-        $payment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(
-            array('name' => 'mopt_payone__ewallet_paypal')
-        );
-        if ($payment === null) {
+        /** @var Shopware\Models\Payment\Payment $paypalPayment */
+        $paypalPayment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(['name' => 'mopt_payone__ewallet_paypal']);
+        /** @var Shopware\Models\Payment\Payment $paypalExpressPayment */
+        $paypalExpressPayment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
+        if ($paypalPayment === null) {
             return;
         }
-        $active = $payment->getActive();
-        $paypalConfig = $payoneMain->getPayoneConfig($payment['id']);
-        if ($active && $paypalConfig['']) {
-            $payment->setActive($active);
-            Shopware()->Models()->persist($payment);
+
+        // only enable Paypal Express if Paypal was active and Paypal Express is active in Payone Config
+        $paymentActive = $paypalPayment->getActive();
+        $paypalConfig = $payoneMain->getPayoneConfig($paypalPayment->getId());
+        $paypalExpressActive = $paypalConfig['paypalEcsActive'];
+        if ($paymentActive && $paypalExpressActive) {
+            $paypalExpressPayment->setActive(true);
+        }
+        $paypalExpressPayment->setCountries($paypalPayment->getCountries());
+        $paypalExpressPayment->setShops($paypalPayment->getShops());
+        $paypalExpressPayment->setDebitPercent($paypalPayment->getDebitPercent());
+        $paypalExpressPayment->setSurcharge($paypalPayment->getSurcharge());
+        $paypalExpressPayment->setSurchargeString($paypalPayment->getSurchargeString());
+        $paypalExpressPayment->setEsdActive($paypalPayment->getEsdActive());
+        $paypalExpressPayment->setMobileInactive($paypalPayment->getMobileInactive());
+
+        Shopware()->Models()->persist($paypalExpressPayment);
+        Shopware()->Models()->flush();
+
+        $queryBuilder = $connection->createQueryBuilder();
+
+        $queryBuilder->select([
+            'd.id',
+        ])
+            ->from('s_premium_dispatch', 'd')
+            ->join('d', 's_premium_dispatch_paymentmeans', 'dp', 'd.id = dp.dispatchID AND dp.paymentID=:paymentID')
+            ->where('d.active = 1');
+
+        $queryBuilder->setParameter('paymentID', $paypalPayment->getId());
+        $dispatchIds = $queryBuilder->execute()->fetchAll();
+        foreach ($dispatchIds AS $dispatchID) {
+            /** @var Dispatch $dispatch */
+            $dispatch = Shopware()->Models()->getRepository(Dispatch::class)->findOneBy(['id' => $dispatchID]);
+            $payments = $dispatch->getPayments();
+            $payments->add($paypalExpressPayment);
+            $dispatch->setPayments($payments);
+            Shopware()->Models()->persist($dispatch);
             Shopware()->Models()->flush();
         }
     }
