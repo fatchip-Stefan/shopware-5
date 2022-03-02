@@ -581,12 +581,11 @@ class Mopt_PayoneInstallHelper
                 'description' => 'PAYONE Apple Pay',
                 'template' => 'mopt_paymentmean_applepay.tpl',
                 'position' => 41,),
-                'position' => 42,),
             array(
                 'name' => 'mopt_payone__ewallet_paypal_express',
                 'description' => 'PAYONE PayPal Express',
                 'template' => null,
-                'position' => 43,),
+                'position' => 42,),
         );
     }
 
