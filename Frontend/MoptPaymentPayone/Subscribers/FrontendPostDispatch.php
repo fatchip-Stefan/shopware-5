@@ -146,11 +146,6 @@ class FrontendPostDispatch implements SubscriberInterface
             $view->extendsTemplate('frontend/checkout/mopt_finish' . $templateSuffix . '.tpl');
         }
 
-        if ($request->getActionName() == 'finish' && $moptPaymentName === 'mopt_payone__fin_paypal_installment') {
-            $installmentData = Shopware()->Session()->offsetGet('moptPaypalInstallmentData');
-            $view->assign('Installment', $installmentData);
-        }
-
         unset($session->moptMandateAgreement);
         if ($request->getParam('mandate_status')) {
             $session->moptMandateAgreement = $request->getParam('mandate_status');
@@ -305,7 +300,7 @@ class FrontendPostDispatch implements SubscriberInterface
             }
         }
 
-        if ((($controllerName == 'checkout' || $controllerName == 'FatchipBSPayonePaypalInstallmentCheckout') && $request->getActionName() == 'confirm')) {
+        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
             if ($moptPaymentHelper->isPayonePaymentMethod($moptPaymentName)) {
                 if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
                     $action->redirect(
