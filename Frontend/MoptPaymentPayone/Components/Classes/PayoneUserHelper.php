@@ -343,6 +343,13 @@ class Mopt_PayoneUserHelper
         $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
         $oldUserData = $this->admin->sGetUserData();
 
+        $session->moptPayoneUserHelperError = false;
+        $register = $this->extractData($personalData, $paymentId);
+        $success = $this->checkAllowedCountries($register, $paymentId, $session);
+        if (!$success) {
+            return $success;
+        }
+
         // TODO: test missing changes from PR #418 Devolo Amazonpay changes
         if ($paymentName === 'mopt_payone__ewallet_amazon_pay' && array_key_exists('shipping_pobox', $personalData) && !empty($personalData['shipping_pobox'])) {
             $personalData['shipping_company'] = $personalData['shipping_pobox'];
@@ -460,7 +467,7 @@ class Mopt_PayoneUserHelper
         if (!$this->isUserLoggedIn($session)) {
             $success = $this->createUserWithoutAccount($payData, $paymentId, $session);
         } else {
-            $user = $this->updateUserAddresses($payData, $session, $paymentId);
+            $success = $this->updateUserAddresses($payData, $session, $paymentId);
         }
         Shopware()->Session()->sPaymentID = $paymentId;
 
