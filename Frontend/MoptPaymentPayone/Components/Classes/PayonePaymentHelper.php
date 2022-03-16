@@ -1613,9 +1613,7 @@ class Mopt_PayonePaymentHelper
     {
         $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
             [
-                'name' => 'mopt_payone__ewallet_amazon_pay',
-                'shops' => Shopware()->Shop()->getId(),
-
+                'name' => 'mopt_payone__ewallet_amazon_pay'
             ]
         );
         return $paymentAmazonPay->getActive();
