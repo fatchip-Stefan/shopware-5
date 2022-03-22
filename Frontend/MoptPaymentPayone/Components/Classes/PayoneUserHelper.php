@@ -600,6 +600,9 @@ class Mopt_PayoneUserHelper
      */
     public function isBillingCountryAllowed($countryId)
     {
+        if (empty($countryId)) {
+            return false;
+        }
         $country = $this->moptPayone__main->getPaymentHelper()->getCountryFromId($countryId);
         return $country->getActive();
     }
@@ -612,6 +615,9 @@ class Mopt_PayoneUserHelper
      */
     public function isShippingCountryAllowed($countryId)
     {
+        if (empty($countryId)) {
+            return false;
+        }
         $country = $this->moptPayone__main->getPaymentHelper()->getCountryFromId($countryId);
         return $country->getAllowShipping();
     }
