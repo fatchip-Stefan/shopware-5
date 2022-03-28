@@ -805,7 +805,8 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
         /** @var Payment $payment */
         $paypalExpressPayment = $this->Payments()->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
-        if ($paypalExpressPayment) {
+        $doPaypalMigration = $this->getInstallHelper()->checkPaypalMigration();
+        if ($paypalExpressPayment && $doPaypalMigration) {
             // migrate Shopware paypal settings, dispatch Settings and Payone Config settings to paypal express
             $this->getInstallHelper()->migratePaypalSettings();
         }
