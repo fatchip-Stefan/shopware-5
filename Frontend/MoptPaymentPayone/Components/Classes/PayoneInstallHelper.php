@@ -2034,5 +2034,32 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
             Shopware()->Models()->flush();
         }
     }
+
+    /**
+     * @return bool
+     */
+    function checkPaypalMigration()
+    {
+        $connection = Shopware()->Container()->get('dbal_connection');
+        $payoneMain = new Mopt_PayoneMain();
+        /** @var Shopware\Models\Payment\Payment $paypalExpressPayment */
+        $paypalExpressPayment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
+        if ($paypalExpressPayment === null) {
+            return false;
+        }
+
+        $queryBuilder = $connection->createQueryBuilder();
+
+        $queryBuilder->select([
+            'd.id',
+        ])
+            ->from('s_premium_dispatch', 'd')
+            ->join('d', 's_premium_dispatch_paymentmeans', 'dp', 'd.id = dp.dispatchID AND dp.paymentID=:paymentID')
+            ->where('d.active = 1');
+
+        $queryBuilder->setParameter('paymentID', $paypalExpressPayment->getId());
+        $dispatchIds = $queryBuilder->execute()->fetchColumn(0);
+        return empty($dispatchIds) ? true : false;
+    }
 }
 
