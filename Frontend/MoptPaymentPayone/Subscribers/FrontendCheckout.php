@@ -309,7 +309,8 @@ class FrontendCheckout implements SubscriberInterface
                 && ($payoneAmazonPayConfig = $moptPayoneMain->getHelper()->getPayoneAmazonPayConfig())
             ) {
                 $paymenthelper = $moptPayoneMain->getPaymentHelper();
-                $config = $moptPayoneMain->getPayoneConfig($paymenthelper->getPaymentAmazonPay()->getId());
+                $paymentId = Shopware()->Session()->moptAmazonpayPaymentId;
+                $config = $moptPayoneMain->getPayoneConfig($paymentId);
 
                 if ($request->get('AuthenticationStatus') == 'Failure' || $request->get('AuthenticationStatus') == 'Abandoned') {
                     //logout because confirmOrderReference failed
@@ -388,7 +389,7 @@ class FrontendCheckout implements SubscriberInterface
 
     protected function isAmazonPayActive($checkoutController)
     {
-        $payments = $checkoutController->getPayments();
+/*        $payments = $checkoutController->getPayments();
         $payoneMain = $this->container->get('MoptPayoneMain');
         $payonePaymentHelper = $payoneMain->getPaymentHelper();
 
@@ -398,6 +399,35 @@ class FrontendCheckout implements SubscriberInterface
 
         foreach ($payments as $paymentMethod) {
             if ($payonePaymentHelper->isAmazonPayActive($paymentMethod)) {
+                return true;
+            }
+        }
+
+        return false;
+*/
+
+        $shop = $this->container->get('shop');
+        $payoneMain = $this->container->get('MoptPayoneMain');
+
+        unset(Shopware()->Session()->moptAmazonpayPaymentId);
+        /** @var Repository $paymentRepository */
+        $paymentRepository = Shopware()->Models()->getRepository(\Shopware\Models\Payment\Payment::class);
+
+        $builder = $paymentRepository->getListQueryBuilder();
+        $builder->addFilter(['payment.name' => '%mopt_payone__ewallet_amazon_pay%', 'payment.active' => 1]);
+        $query = $builder->getQuery();
+        $test = $query->execute();
+
+        if ($payoneMain->getHelper()->isAboCommerceArticleInBasket()) {
+            return false;
+        }
+        if (empty($test)) {
+            return false;
+        }
+
+        foreach ($test AS $payment) {
+            if ($payoneMain->getPaymentHelper()->isPaymentAssignedToSubshop($payment->getId(), $shop->getId())) {
+                Shopware()->Session()->moptAmazonpayPaymentId = $payment->getId();
                 return true;
             }
         }

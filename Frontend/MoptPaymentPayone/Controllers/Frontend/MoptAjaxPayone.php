@@ -1087,6 +1087,7 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
                 }
             }
 
+            $this->session->moptPayoneUserHelperError = false;
             $success = $payoneUserHelper->createOrUpdateUser($response, $payonePaymentHelper->getPaymentAmazonPay()->getId(), $this->session);
 
             if ($success === false) {

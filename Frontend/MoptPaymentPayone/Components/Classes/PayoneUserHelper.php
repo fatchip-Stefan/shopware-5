@@ -351,11 +351,11 @@ class Mopt_PayoneUserHelper
         }
 
         // TODO: test missing changes from PR #418 Devolo Amazonpay changes
-        if ($paymentName === 'mopt_payone__ewallet_amazon_pay' && array_key_exists('shipping_pobox', $personalData) && !empty($personalData['shipping_pobox'])) {
+        if (strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 && array_key_exists('shipping_pobox', $personalData) && !empty($personalData['shipping_pobox'])) {
             $personalData['shipping_company'] = $personalData['shipping_pobox'];
         }
 
-        if  ($paymentName === 'mopt_payone__ewallet_amazon_pay' &&
+        if  (strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 &&
             array_key_exists('shipping_company', $personalData) &&
             !empty($personalData['shipping_company']) &&
             preg_match('~[0-9]+~', $personalData['shipping_company'])) {
@@ -363,7 +363,7 @@ class Mopt_PayoneUserHelper
             unset($personalData['shipping_company']);
         }
 
-        if  ($paymentName === 'mopt_payone__ewallet_amazon_pay' &&
+        if  (strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 &&
             array_key_exists('shipping_company', $personalData) &&
             !empty($personalData['shipping_company']) &&
             preg_match('~c/o~', $personalData['shipping_company'])) {
@@ -376,7 +376,7 @@ class Mopt_PayoneUserHelper
         // uncomment the following lines to test this
         // unset($personalData['billing_street']);
         // unset($personalData['billing_country']);
-        if ($paymentName === 'mopt_payone__ewallet_amazon_pay' && empty($personalData['billing_street'])) {
+        if (strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 && empty($personalData['billing_street'])) {
             $personalData['billing_city'] = $oldUserData['billingaddress']['city'];
             $personalData['billing_country'] = $this->moptPayone__helper->getCountryIsoFromId($oldUserData['billingaddress']['country']['id']);
             $personalData['billing_street'] = $oldUserData['billingaddress']['street'];
@@ -401,7 +401,7 @@ class Mopt_PayoneUserHelper
         }
         // amazonpay: check if original billingaddress is the same as shipping address
         // in this case add a new shipping address
-        if (($paymentName === 'mopt_payone__ewallet_amazon_pay' || $paymentName === 'mopt_payone__ewallet_paypal_express' ) && $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
+        if ((strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 || strpos($paymentName, 'mopt_payone__ewallet_paypal_express') === 0) && $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
             $this->saveSeperateShippingAddress($personalData, $session);
         } else {
             $updated = $this->updateShippingAddress($personalData, $session);

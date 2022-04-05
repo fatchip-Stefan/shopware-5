@@ -3,6 +3,7 @@
 use Shopware\Components\Routing\Router;
 use Shopware\Models\Customer\Address;
 use Shopware\Models\Customer\Customer;
+use Shopware\Models\Payment\Payment;
 
 /**
  * $Id: $
@@ -1562,14 +1563,21 @@ class Mopt_PayonePaymentHelper
      */
     public function getPaymentPaydirektExpress()
     {
-        $paymentPaydirektexpress = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            [
-                'name' => 'mopt_payone__ewallet_paydirekt_express',
-                'active' => true,
-                'shops' => Shopware()->Shop()->getId(),
-            ]
-        );
-        return $paymentPaydirektexpress;
+        $shopID = Shopware()->Shop()->getId();
+        $em = Shopware()->Models();
+        $result = $em->getRepository(Payment::class)->createQueryBuilder('p')
+            ->where('p.active = :active')
+            ->andWhere('p.name LIKE :name')
+            ->setParameter('active', true)
+            ->setParameter('name', 'mopt_payone__ewallet_paydirekt_express%')
+            ->getQuery()
+            ->getResult();
+
+        foreach ($result AS $payment) {
+            if ($this->isPaymentAssignedToSubshop($payment->getId(), $shopID)) {
+                return $payment;
+            }
+        }
     }
 
     /**
@@ -1579,15 +1587,21 @@ class Mopt_PayonePaymentHelper
      */
     public function getPaymentAmazonPay()
     {
-        $paymentAmazonPay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            [
-                'name' => 'mopt_payone__ewallet_amazon_pay',
-                'active' => true,
-                // 'shops' => Shopware()->Shop()->getId(),
+        $shopID = Shopware()->Shop()->getId();
+        $em = Shopware()->Models();
+        $result = $em->getRepository(Payment::class)->createQueryBuilder('p')
+            ->where('p.active = :active')
+            ->andWhere('p.name LIKE :name')
+            ->setParameter('active', true)
+            ->setParameter('name', 'mopt_payone__ewallet_amazon_pay%')
+            ->getQuery()
+            ->getResult();
 
-            ]
-        );
-        return $paymentAmazonPay;
+        foreach ($result AS $payment) {
+            if ($this->isPaymentAssignedToSubshop($payment->getId(), $shopID)) {
+                return $payment;
+            }
+        }
     }
 
     /**

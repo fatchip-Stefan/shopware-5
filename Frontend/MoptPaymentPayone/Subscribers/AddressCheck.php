@@ -114,7 +114,7 @@ class AddressCheck implements SubscriberInterface
             $currentPaymentId = Shopware()->Session()->sPaymentID;
             $currentPaymentName = $moptPayoneMain->getPaymentHelper()->getPaymentNameFromId($currentPaymentId);
 
-            if($currentPaymentName == 'mopt_payone__ewallet_amazon_pay') {
+            if(strpos($currentPaymentName, 'mopt_payone__ewallet_amazon_pay') === 0) {
                 $arguments->setReturn(false);
                 return;
             }
