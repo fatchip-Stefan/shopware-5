@@ -15,7 +15,6 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
     /** @var Mopt_PayoneUserHelper $payoneUserHelper */
     protected $payoneUserHelper = null;
     protected $admin;
-    protected $errorMessage;
 
     /**
      * init notification controller for processing status updates
@@ -137,10 +136,9 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
 
     public function paypalexpressErrorAction()
     {
-        $error = $this->request->getParam('errorCode');
         $session = Shopware()->Session();
         $session->moptPayoneUserHelperError = true;
-        $session->moptPayoneUserHelperErrorMessage = $this->moptPayone__paymentHelper->moptGetErrorMessageFromErrorCodeViaSnippet(false, $error);
+        $session->moptPayoneUserHelperErrorMessage = $this->moptPayone__paymentHelper->moptGetErrorMessageFromErrorCodeViaSnippet(false, $this->request->getParam('errorCode'));
         unset($session->moptPaypalExpressWorkorderId);
         unset($session->moptBasketChanged);
         return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
