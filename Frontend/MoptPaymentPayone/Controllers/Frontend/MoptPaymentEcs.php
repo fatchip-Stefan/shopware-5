@@ -15,6 +15,7 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
     /** @var Mopt_PayoneUserHelper $payoneUserHelper */
     protected $payoneUserHelper = null;
     protected $admin;
+    protected $errorMessage;
 
     /**
      * init notification controller for processing status updates
@@ -61,11 +62,9 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
             $session->moptPaypalExpressWorkorderId = $response->getWorkorderId();
             $this->redirect($response->getRedirecturl());
         } else if ($response->getStatus() === Payone_Api_Enum_ResponseType::ERROR) {
-            $this->forward('paypalexpressError');
-            exit();
+            return $this->forward('paypalexpressError', null,null, ['errorCode' => $response->getErrorcode()]);
         } else {
-            $this->forward('paypalexpressAbort');
-            exit();
+            return $this->forward('paypalexpressAbort');
         }
     }
 
@@ -110,18 +109,16 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         ));
 
         $response = $service->request($request);
-
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::OK) {
             $success = $this->payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
             $session->offsetSet('moptFormSubmitted', true);
             if ($success !== false) {
-                return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));
+                return $this->redirect(['controller' => 'checkout', 'action' => 'confirm']);
             } else {
-                return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+                return $this->redirect(['controller' => 'checkout', 'action' => 'cart']);
             }
         } else {
-            // TODO add error message
-            return $this->forward('paypalexpressAbort');
+            return $this->forward('paypalexpressError', null,null, ['errorCode' => $response->getErrorcode()]);;
         }
     }
 
@@ -135,6 +132,17 @@ class Shopware_Controllers_Frontend_MoptPaymentEcs extends Shopware_Controllers_
         unset($session->moptPaypalExpressWorkorderId);
         unset($session->moptBasketChanged);
 
+        return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
+    }
+
+    public function paypalexpressErrorAction()
+    {
+        $error = $this->request->getParam('errorCode');
+        $session = Shopware()->Session();
+        $session->moptPayoneUserHelperError = true;
+        $session->moptPayoneUserHelperErrorMessage = $this->moptPayone__paymentHelper->moptGetErrorMessageFromErrorCodeViaSnippet(false, $error);
+        unset($session->moptPaypalExpressWorkorderId);
+        unset($session->moptBasketChanged);
         return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
     }
 }
