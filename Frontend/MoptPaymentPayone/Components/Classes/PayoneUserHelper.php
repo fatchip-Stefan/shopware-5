@@ -457,7 +457,7 @@ class Mopt_PayoneUserHelper
      * @param Payone_Api_Response_Genericpayment_Ok $apiResponse
      * @param int $paymentId
      * @param $session
-     * @return bool $success
+     * @return array|bool|null $success
      * @throws Enlight_Exception
      */
     public function createOrUpdateUser($apiResponse, $paymentId, $session)

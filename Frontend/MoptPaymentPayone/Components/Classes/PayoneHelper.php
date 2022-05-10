@@ -1626,6 +1626,14 @@ class Mopt_PayoneHelper
     {
         $sql = "SELECT 1 FROM s_core_plugins WHERE name='DHLPaWunschpaket' AND active=1";
         $result = Shopware()->Db()->fetchOne($sql);
+        $moptPlugin = ($result == 1);
+        if ($moptPlugin) {
+            return true;
+            // check for new version of the plugin
+        } else {
+            $sql = "SELECT 1 FROM s_core_plugins WHERE name='dhlxxWunschzustellung' AND active=1";
+            $result = Shopware()->Db()->fetchOne($sql);
+        }
         return ($result == 1);
     }
 

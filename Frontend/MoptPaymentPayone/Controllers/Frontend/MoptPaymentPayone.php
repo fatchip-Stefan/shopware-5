@@ -902,6 +902,8 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
         $session->offsetUnset('moptPaydirektExpressWorkerId');
         $session->offsetUnset('paySafeToken');
         $session->offsetUnset('moptRatepayCountry');
+        $session->offsetUnset('moptBasketChanged');
+        $session->offsetUnset('moptPaypalExpressWorkorderId');
     }
 
     /**
