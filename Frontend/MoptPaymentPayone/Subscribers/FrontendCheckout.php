@@ -163,20 +163,8 @@ class FrontendCheckout implements SubscriberInterface
         $session = Shopware()->Session();
         $orderVars = $session->get('sOrderVariables');
         $userPaymentId = $orderVars['sUserData']['additional']['payment']['id'];
-
-        //check if payment method is PayPal ecs
         /** @var Mopt_PayonePaymentHelper $helper */
         $helper = $this->container->get('MoptPayoneMain')->getPaymentHelper();
-        /* TODO Chck if neccessary for new PAypal ECS
-        if (strpos($helper->getPaymentNameFromId($userPaymentId),'mopt_payone__ewallet_paypal_express') === 0) {
-            if (!$this->isShippingAddressSupported($orderVars['sUserData']['shippingaddress'])) {
-                $view->assign('invalidShippingAddress', true);
-                $view->assign('sBasketInfo', Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                    ->get('packStationError', 'Die Lieferung an eine Packstation ist mit dieser Zahlungsart leider nicht möglich', true));
-            }
-        }
-        */
-
         $router = $this->container->get('router');
 
         if ($request->getActionName() === 'shippingPayment') {
@@ -551,29 +539,5 @@ class FrontendCheckout implements SubscriberInterface
         }
 
         return $result['image'];
-    }
-
-    /**
-     * Check if address is confirm with PayPal Configuration (packStation check)
-     *
-     * @param $shippingData
-     * @return bool
-     */
-    private function isShippingAddressSupported($shippingData)
-    {
-        $config = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig();
-        if ($config) {
-            if ($config->getPackStationMode() == 'deny') {
-                //Check if address is PackStation
-                foreach ($shippingData as $addressPart) {
-                    if (!is_array($addressPart)) {
-                        if (strpos(strtolower($addressPart), 'packstation') !== false) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
     }
 }

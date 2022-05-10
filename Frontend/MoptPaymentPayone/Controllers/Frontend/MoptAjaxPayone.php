@@ -1052,27 +1052,8 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
 
         if ($response->getStatus() == \Payone_Api_Enum_ResponseType::OK) {
             // create User from Address Data
-
             $responseData = $response->toArray();
             $responseAddress = $response->getPaydata()->toAssocArray();
-
-            // check if packstation support is enabled in payone config
-         /*
-         * @var $config \Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay
-         */
-            /*
-            $config = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig();
-            //Check if amazon payment is not allowed for Packstation's
-            if ($config->getPackStationMode() == 'deny') {
-                foreach ($address as $part) {
-                    if (strpos($part, 'Packstation') !== false
-                        || strpos($part, 'packstation') !== false) {
-                        return false;
-                    }
-                }
-            }
-        */
-
             //check if telephonenumber is required in shop config
             if (Shopware()->Config()->get('requirePhoneField')) {
                 $shipping_telephonenumber = $responseAddress['shipping_telephonenumber'];

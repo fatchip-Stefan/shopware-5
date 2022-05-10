@@ -301,7 +301,7 @@ class FrontendPostDispatch implements SubscriberInterface
             }
         }
 
-        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
+/*        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
             if ($moptPaymentHelper->isPayonePaymentMethod($moptPaymentName)) {
                 if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
                     $action->redirect(
@@ -313,7 +313,7 @@ class FrontendPostDispatch implements SubscriberInterface
                 }
             }
         }
-
+*/
         if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
             if (isset(Shopware()->Session()->moptPaydirektExpressWorkerId) && $moptPaymentHelper->isPayonePaydirektExpress($moptPaymentName)) {
                 if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
@@ -998,14 +998,12 @@ class FrontendPostDispatch implements SubscriberInterface
     {
         $session = Shopware()->Session();
         $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
-        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_EXPRESS) && ($session->moptBasketChanged || $session->moptFormSubmitted !== true)) {
-            $this->unsetExpressPaymentSessionVars();
-            $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
-                ->get('expressBasketChanged',"<div style='text-align: center'><b>Express Checkout<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte wiederholen Sie den Express Checkout oder wählen Sie eine andere Zahlart<br></b></div>");
-            $view->assign('moptBasketChanged', true);
-            $view->assign('moptOverlayRedirectNotice', $redirectnotice);
-            return;
+        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_EXPRESS) && $session->moptBasketChanged === true) {
+                $this->unsetExpressPaymentSessionVars();
+                $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                    ->get('expressBasketChanged',"<div style='text-align: center'><b>Express Checkout<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte wiederholen Sie den Express Checkout oder wählen Sie eine andere Zahlart<br></b></div>");
+                $view->assign('moptBasketChanged', true);
+                $view->assign('moptOverlayRedirectNotice', $redirectnotice);
         }
-
     }
 }

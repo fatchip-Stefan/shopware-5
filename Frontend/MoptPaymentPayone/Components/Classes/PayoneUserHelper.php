@@ -694,7 +694,34 @@ class Mopt_PayoneUserHelper
                 ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
                 ->get('moptPayonePaymentNotAssigedToSubshop');
         }
-
+        // check for packstation addresses for Paypal Express
+        if (! $this->checkPackstationAllowed($paymentId, $register['shipping']['street'])) {
+            $session->moptPayoneUserHelperError = true;
+            $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
+                ->getNamespace('frontend/MoptPaymentPayone/errorMessages')
+                ->get('packStationError');
+        }
         return ! $session->moptPayoneUserHelperError;
+    }
+
+    private function checkPackstationAllowed($paymentId, $street)
+    {
+        $paymentHelper = Mopt_PayoneMain::getInstance()->getPaymentHelper();
+        $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
+        $isPaypalexpress = $paymentHelper->isPayonePaypalExpress($paymentName);
+        $isAmazonPay = $paymentHelper->isPayoneAmazonPay($paymentName);
+        $paypalExpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig();
+        $amazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig();
+        if ($isPaypalexpress && $paypalExpressConfig->getPackStationMode() === 'deny' ) {
+            if (strpos(strtolower($street), 'packstation') !== false) {
+                return false;
+            }
+        }
+        if ($isAmazonPay && $amazonPayConfig->getPackStationMode() === 'deny' ) {
+            if (strpos(strtolower($street), 'packstation') !== false) {
+                return false;
+            }
+        }
+        return true;
     }
 }
