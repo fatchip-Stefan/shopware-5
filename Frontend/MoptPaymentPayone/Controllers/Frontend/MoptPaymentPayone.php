@@ -802,6 +802,8 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
     {
         $session = Shopware()->Session();
         $session->offsetUnset('moptPaymentReference');
+        $session->offsetUnset('moptBasketChanged');
+        $session->offsetUnset('moptPaypalExpressWorkorderId');
         $this->View()->errormessage = $session->payoneErrorMessage;
         if ($session->otherErrorMessages !== false) {
             $this->View()->contactShopOwner = $session->otherErrorMessages['contactShopOwner'];
