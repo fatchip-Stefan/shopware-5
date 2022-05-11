@@ -128,7 +128,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
         if ($response->getStatus() === Payone_Api_Enum_ResponseType::OK) {
             $session->offsetSet('moptFormSubmitted', true);
             $success = $this->payoneUserHelper->createOrUpdateUser($response, $paymentId, $session);
-            if ($success !== false) {
+            if ($success === false) {
                 return $this->redirect(array('controller' => 'checkout', 'action' => 'cart'));
             } else {
                 return $this->redirect(array('controller' => 'checkout', 'action' => 'confirm'));

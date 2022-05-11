@@ -195,6 +195,10 @@ class Mopt_PayoneUserHelper
         }
         $register['billing']['street']         = $personalData['billing_street'];
         $register['billing']['additionalAddressLine1'] = $personalData['billing_addressaddition'];
+        // Paydirekt Express
+        if (! empty( $personalData['billing_additionaladdressinformation'])) {
+            $register['billing']['additionalAddressLine1'] = $personalData['billing_additionaladdressinformation'];
+        }
         $register['billing']['zipcode']        = $personalData['billing_zip'];
         $register['billing']['firstname']      = $personalData['billing_firstname'];
         $register['billing']['lastname']       = $personalData['billing_lastname'];
@@ -223,6 +227,10 @@ class Mopt_PayoneUserHelper
         $register['shipping']['lastname']     = $personalData['shipping_lastname'];
         $register['shipping']['street']       = $personalData['shipping_street'];
         $register['shipping']['additionalAddressLine1'] = $personalData['shipping_addressaddition'];
+        // Paydirekt Express
+        if (! empty( $personalData['shipping_additionaladdressinformation'])) {
+            $register['shipping']['additionalAddressLine1'] = $personalData['shipping_additionaladdressinformation'];
+        }
         $register['shipping']['zipcode']      = $personalData['shipping_zip'];
         $register['shipping']['city']         = $personalData['shipping_city'];
         $register['shipping']['country']      = $this->moptPayone__helper->getCountryIdFromIso($personalData['shipping_country']);
@@ -401,7 +409,8 @@ class Mopt_PayoneUserHelper
         }
         // amazonpay: check if original billingaddress is the same as shipping address
         // in this case add a new shipping address
-        if ((strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 || strpos($paymentName, 'mopt_payone__ewallet_paypal_express') === 0) && $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
+        if ((strpos($paymentName, 'mopt_payone__ewallet_amazon_pay') === 0 || strpos($paymentName, 'mopt_payone__ewallet_paypal_express') === 0 || strpos($paymentName, 'mopt_payone__ewallet_paydirekt_express') === 0) &&
+            $oldUserData['billingaddress']['id'] == $oldUserData['shippingaddress']['id']) {
             $this->saveSeperateShippingAddress($personalData, $session);
         } else {
             $updated = $this->updateShippingAddress($personalData, $session);
