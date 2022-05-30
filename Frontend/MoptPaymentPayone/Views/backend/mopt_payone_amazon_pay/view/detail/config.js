@@ -60,8 +60,8 @@ Ext.define('Shopware.apps.MoptPayoneAmazonPay.view.detail.Config', {
                 { type: 'string', name: 'name' }
             ],
             data: [
-                { value: 'allow', name: 'Allow' },
-                { value: 'deny', name: 'Deny' },
+                { value: 'allow', name: '{s name="packStation/allow"}Erlauben{/s}' },
+                { value: 'deny', name: '{s name="packStation/deny"}Verbieten{/s}' },
             ]
         });
 
@@ -122,6 +122,11 @@ Ext.define('Shopware.apps.MoptPayoneAmazonPay.view.detail.Config', {
                         editable: false,
                         allowBlank: false,
                         store: me.amazonModeStore
+                    },
+                    shopId: {
+                        fieldLabel: '{s name="shop"}Shop{/s}',
+                        name: 'shopId',
+                        allowBlank: false
                     },
                     packStationMode: {
                         xtype: 'combobox',

@@ -132,7 +132,7 @@
             </form>
         </div>
        
-        <a style="font-size: 28px" href="#"  data-target="#payonetable">Konfiguration PayPal ECS Logos</a>
+        <a style="font-size: 28px" href="#"  data-target="#payonetable">Konfiguration PayPal Express Logos</a>
         <div id="payonetable">
             <form role="form" id="ajaxpaypalecs" enctype="multipart/form-data">
                     <table class="table-condensed" id="paypalecstable">
@@ -180,7 +180,7 @@
 
                         <tr><td><img id="newRow" onclick="addRow()" src="{link file='backend/_resources/images/add.png'}"></td></tr>
                     </table>
-                <button type="submit" class="btn-payone btn " >{s name=global-form/button}Speichern{/s}</button>
+                <button type="submit" class="btn-payone btn " >{s name="global-form/button"}Speichern{/s}</button>
             </form>                
         </div>
         <a style="font-size: 28px" href="#" data-target="#amazonpayconfigs">Konfiguration AmazonPay</a>

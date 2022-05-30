@@ -1941,6 +1941,31 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
      *
      * @return void
      */
+    function checkAndUpdateAmazonPayShopModelExtension()
+    {
+        $db = Shopware()->Db();
+        $DBConfig = $db->getConfig();
+        $sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='s_plugin_mopt_payone_amazon_pay'
+                AND TABLE_SCHEMA='" . $DBConfig['dbname'] . "'
+                AND COLUMN_NAME ='shop_id'";
+        $result = $db->query($sql);
+
+        if ($result->rowCount() === 0) {
+            $sql = "ALTER TABLE `s_plugin_mopt_payone_amazon_pay` "
+                . "ADD COLUMN shop_id int(11) DEFAULT 1;";
+            $db->exec($sql);
+
+            $sql = "UPDATE s_plugin_mopt_payone_amazon_pay SET shop_id = 1;";
+            $db->exec($sql);
+        }
+
+    }
+
+    /**
+     * check if paypal configuration is already extended Pack station check
+     *
+     * @return void
+     */
     function checkAndUpdatePayPalDefaultModelExtension()
     {
         $db = Shopware()->Db();
@@ -2041,7 +2066,6 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
     function checkPaypalMigration()
     {
         $connection = Shopware()->Container()->get('dbal_connection');
-        $payoneMain = new Mopt_PayoneMain();
         /** @var Shopware\Models\Payment\Payment $paypalExpressPayment */
         $paypalExpressPayment = Shopware()->Models()->getRepository(Payment::class)->findOneBy(['name' => 'mopt_payone__ewallet_paypal_express']);
         if ($paypalExpressPayment === null) {

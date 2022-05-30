@@ -719,8 +719,8 @@ class Mopt_PayoneUserHelper
         $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
         $isPaypalexpress = $paymentHelper->isPayonePaypalExpress($paymentName);
         $isAmazonPay = $paymentHelper->isPayoneAmazonPay($paymentName);
-        $paypalExpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig();
-        $amazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig();
+        $paypalExpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig(Shopware()->Shop()->getId());
+        $amazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig(Shopware()->Shop()->getId());
         if ($isPaypalexpress && $paypalExpressConfig->getPackStationMode() === 'deny' ) {
             if (strpos(strtolower($street), 'packstation') !== false) {
                 return false;
