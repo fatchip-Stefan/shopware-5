@@ -294,7 +294,7 @@ class FrontendCheckout implements SubscriberInterface
             && $templateSuffix === '') {
 
             if ($this->isAmazonPayActive($subject)
-                && ($payoneAmazonPayConfig = $moptPayoneMain->getHelper()->getPayoneAmazonPayConfig())
+                && ($payoneAmazonPayConfig = $moptPayoneMain->getHelper()->getPayoneAmazonPayConfig(Shopware()->Shop()->getId()))
             ) {
                 $paymenthelper = $moptPayoneMain->getPaymentHelper();
                 $paymentId = Shopware()->Session()->moptAmazonpayPaymentId;
@@ -514,14 +514,14 @@ class FrontendCheckout implements SubscriberInterface
      */
     protected function moptPayonePaydirektShortcutImgURL()
     {
-        $localeId = $this->container->get('shop')->getLocale()->getId();
+        $shopId = $this->container->get('shop')->getId();
 
         $builder = Shopware()->Models()->createQueryBuilder();
 
         $builder->select('button.image')
             ->from('Shopware\CustomModels\MoptPayonePayDirekt\MoptPayonePayDirekt', 'button')
-            ->where('button.localeId = ?1')
-            ->setParameter(1, $localeId);
+            ->where('button.shopId = ?1')
+            ->setParameter(1, $shopId);
 
         $result = $builder->getQuery()->getOneOrNullResult();
 

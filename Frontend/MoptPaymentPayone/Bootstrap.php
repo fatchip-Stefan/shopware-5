@@ -819,6 +819,9 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
 
         // remove column locale_id from paypal express config
         $this->getInstallHelper()->checkAndRemovePayPalLocaleModelExtension();
+
+        // Add shop to paypal express config
+        $this->getInstallHelper()->checkAndUpdateAmazonPayShopModelExtension();
     }
 
     /**
@@ -911,7 +914,7 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
             'parent' => $item,
         ));
         $this->createMenuItem(array(
-            'label' => 'Payone PayDirekt',
+            'label' => 'Payone Paydirekt Express',
             'controller' => 'MoptPayonePayDirekt',
             'action' => 'Index',
             'class' => 'sprite-locale',

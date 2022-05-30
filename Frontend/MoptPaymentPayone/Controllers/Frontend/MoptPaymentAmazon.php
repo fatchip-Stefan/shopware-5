@@ -25,7 +25,6 @@ class Shopware_Controllers_Frontend_MoptPaymentAmazon extends Shopware_Controlle
         $this->plugin = Shopware()->Container()->get('plugins')->Frontend()->MoptPaymentPayone();
         $this->basket = Shopware()->Modules()->Basket();
         $session = Shopware()->Session();
-        $test = $session->moptPaypayEcsPaymentId;
         $paymentId = $session->moptAmazonpayPaymentId;
 
         $this->admin->sSYSTEM->_POST['sPayment'] = $paymentId;
@@ -46,7 +45,6 @@ class Shopware_Controllers_Frontend_MoptPaymentAmazon extends Shopware_Controlle
     public function indexAction()
     {
         $session = Shopware()->Session();
-        $test = $session->moptPaypayEcsPaymentId;
         $paymentId = $session->moptAmazonpayPaymentId;
         if (!empty($this->Request()->getParam("access_token"))) {
             $this->session->moptPayoneAmazonAccessToken = $this->Request()->getParam("access_token");
@@ -65,7 +63,7 @@ class Shopware_Controllers_Frontend_MoptPaymentAmazon extends Shopware_Controlle
         }
 
         if ($this->container->get('MoptPayoneMain')->getPaymentHelper()->isAmazonPayEnabled()
-            && ($payoneAmazonPayConfig =  $this->container->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig())
+            && ($payoneAmazonPayConfig =  $this->container->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig(Shopware()->Shop()->getId()))
         ) {
             $config = $this->container->get('MoptPayoneMain')->getPayoneConfig($paymentId);
 
@@ -172,7 +170,7 @@ class Shopware_Controllers_Frontend_MoptPaymentAmazon extends Shopware_Controlle
             array('key' => 'amazon_reference_id', 'data' => $this->session->moptPayoneAmazonReferenceId)
         ));
 
-        $payoneAmazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig();
+        $payoneAmazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig(Shopware()->Shop()->getId());
 
         if ($payoneAmazonPayConfig->getAmazonMode() === 'sync') {
             $paydata->addItem(new Payone_Api_Request_Parameter_Paydata_DataItem(

@@ -158,7 +158,7 @@ class Shopware_Controllers_Frontend_moptPaymentPayDirekt extends Shopware_Contro
      */
     private function getPaydirektExpressDispatchId()
     {
-        $config = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayDirektExpressConfig();
+        $config = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayDirektExpressConfig(Shopware()->Shop()->getId());
         return $config->getDispatchId();
     }
 

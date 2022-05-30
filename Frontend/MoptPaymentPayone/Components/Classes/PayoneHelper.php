@@ -1589,22 +1589,6 @@ class Mopt_PayoneHelper
         return true;
     }
 
-    public function getPayoneAmazonPayConfig()
-    {
-        // use latest config
-        $sql = "SELECT MAX(id) FROM s_plugin_mopt_payone_amazon_pay";
-        $latest = Shopware()->Db()->fetchOne($sql);
-
-        /**
-         * @var $config \Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay
-         */
-        $config = Shopware()->Models()->find(
-            'Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay',
-            $latest
-        );
-        return $config;
-    }
-
     public function isCompany($userId)
     {
         $customer = Shopware()->Models()
@@ -1637,57 +1621,58 @@ class Mopt_PayoneHelper
         return ($result == 1);
     }
 
-
-    public function getPayDirektExpressConfig(){
-        // use latest config
-        $latest = $this->getPayDirektExpressLatestConfig();
-        if ($latest) {
-            /**
-             * @var $config \Shopware\CustomModels\MoptPayonePayDirekt\MoptPayonePayDirekt
-             */
-            $config = Shopware()->Models()->find(
-                'Shopware\CustomModels\MoptPayonePayDirekt\MoptPayonePayDirekt',
-                $latest
-            );
-            return $config;
-        }
-        return false;
-    }
-
     /**
      * Return the latest PayPalConfig
      * @return bool|\Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal
      */
-    public function getPayonePayPalConfig()
+    public function getPayonePayPalConfig($subshopId)
     {
-        // use latest config
-        $latest = $this->getPayPalLatestConfig();
-        if ($latest) {
+        $sql = "SELECT id FROM s_plugin_mopt_payone_paypal WHERE shop_id = " . $subshopId;
+        $configId = Shopware()->Db()->fetchOne($sql);
+        if ($configId) {
             /**
              * @var $config \Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal
              */
             $config = Shopware()->Models()->find(
                 'Shopware\CustomModels\MoptPayonePaypal\MoptPayonePaypal',
-                $latest
+                $configId
             );
             return $config;
         }
         return false;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getPayPalLatestConfig()
+    public function getPayoneAmazonPayConfig($subshopId)
     {
-        $sql = "SELECT MAX(id) FROM s_plugin_mopt_payone_paypal";
-        return Shopware()->Db()->fetchOne($sql);
+        $sql = "SELECT id FROM s_plugin_mopt_payone_amazon_pay WHERE shop_id =" .$subshopId;
+        $configId = Shopware()->Db()->fetchOne($sql);
+        if ($configId) {
+            /**
+             * @var $config \Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay
+             */
+            $config = Shopware()->Models()->find(
+                'Shopware\CustomModels\MoptPayoneAmazonPay\MoptPayoneAmazonPay',
+                $configId
+            );
+            return $config;
+        }
+        return false;
     }
 
-    private function getPayDirektExpressLatestConfig()
-    {
-        $sql = "SELECT MAX(id) FROM s_plugin_mopt_payone_pay_direkt";
-        return Shopware()->Db()->fetchOne($sql);
+    public function getPayDirektExpressConfig($subshopId){
+        $sql = "SELECT id FROM s_plugin_mopt_payone_pay_direkt WHERE shop_id =" .$subshopId;
+        $configId = Shopware()->Db()->fetchOne($sql);
+        if ($configId) {
+            /**
+             * @var $config \Shopware\CustomModels\MoptPayonePayDirekt\MoptPayonePayDirekt
+             */
+            $config = Shopware()->Models()->find(
+                'Shopware\CustomModels\MoptPayonePayDirekt\MoptPayonePayDirekt',
+                $configId
+            );
+            return $config;
+        }
+        return false;
     }
 
     /**
