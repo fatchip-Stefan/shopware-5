@@ -24,7 +24,7 @@ Ext.define('Shopware.apps.MoptPayoneAmazonPay.model.Config', {
             field: 'shopId',
 
             type: 'hasMany',
-            model: 'Shopware.apps.Base.model.Shop',added
+            model: 'Shopware.apps.Base.model.Shop',
             name: 'getShop',
             associationKey: 'shop'
         }
