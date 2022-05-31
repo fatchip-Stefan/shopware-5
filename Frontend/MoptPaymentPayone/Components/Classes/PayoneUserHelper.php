@@ -681,7 +681,7 @@ class Mopt_PayoneUserHelper
                 ->get('moptPayoneBillingCountryNotSupported');
         }
 
-        // Check if Shipping Country is allowed in backend country config
+        // Check if shipping country is allowed in backend country config
         if (!$this->isShippingCountryAllowed($register['shipping']['country'])) {
             $session->moptPayoneUserHelperError = true;
             $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
@@ -696,7 +696,7 @@ class Mopt_PayoneUserHelper
                 ->get('moptPayoneShippingCountryNotAssigedToPayment');
         }
 
-        // Check if the Subshop is assigned to PPE
+        // Check if the subshop is assigned to payment
         if (!$this->isPaymentAssignedToSubshop($paymentId, Shopware()->Container()->get('shop')->getId())) {
             $session->moptPayoneUserHelperError = true;
             $session->moptPayoneUserHelperErrorMessage = Shopware()->Snippets()
@@ -719,14 +719,21 @@ class Mopt_PayoneUserHelper
         $paymentName = $paymentHelper->getPaymentNameFromId($paymentId);
         $isPaypalexpress = $paymentHelper->isPayonePaypalExpress($paymentName);
         $isAmazonPay = $paymentHelper->isPayoneAmazonPay($paymentName);
-        $paypalExpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig(Shopware()->Shop()->getId());
+        $isPaydirektexpress = $paymentHelper->isPayonePaydirektExpress($paymentName);
+        $paypalexpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayonePayPalConfig(Shopware()->Shop()->getId());
         $amazonPayConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayoneAmazonPayConfig(Shopware()->Shop()->getId());
-        if ($isPaypalexpress && $paypalExpressConfig->getPackStationMode() === 'deny' ) {
+        $paydirektexpressConfig = Shopware()->Container()->get('MoptPayoneMain')->getHelper()->getPayDirektExpressConfig(Shopware()->Shop()->getId());
+        if ($isPaypalexpress && $paypalexpressConfig->getPackStationMode() === 'deny' ) {
             if (strpos(strtolower($street), 'packstation') !== false) {
                 return false;
             }
         }
         if ($isAmazonPay && $amazonPayConfig->getPackStationMode() === 'deny' ) {
+            if (strpos(strtolower($street), 'packstation') !== false) {
+                return false;
+            }
+        }
+        if ($isPaydirektexpress && $paydirektexpressConfig->getPackStationMode() === 'deny' ) {
             if (strpos(strtolower($street), 'packstation') !== false) {
                 return false;
             }
