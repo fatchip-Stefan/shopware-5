@@ -273,16 +273,9 @@ class FrontendPostDispatch implements SubscriberInterface
             $view->assign('applepayNotConfiguredError', ! $this->isApplepayConfigured($moptPayoneData['moptApplepayConfig']));
         }
 
-        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm' && $moptPaymentName === 'mopt_payone__fin_paypal_installment')) {
-            if (isset($session->moptPaypalInstallmentWorkerId)) {
-                $action->redirect(['controller' => 'FatchipBSPayonePaypalInstallmentCheckout', 'action' => 'confirm', 'forceSecure' => true]);
-            } else {
-                $action->redirect(['controller' => 'FatchipBSPayonePaypalInstallmentCheckout', 'action' => 'gateway', 'forceSecure' => true]);
-            }
-        }
-
         // set flag to remove all address change buttons on confirm page
-        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm' && in_array($moptPaymentName, \Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_SHIPPINGPAYMENTPAGE))) {
+        $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $moptPaymentName);
+        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm' && in_array($cleanedPaymentName, \Mopt_PayoneConfig::PAYMENTS_EXCLUDED_FROM_SHIPPINGPAYMENTPAGE))) {
             $view->assign('moptDenyAddressChanges', true);
         }
 
@@ -298,32 +291,6 @@ class FrontendPostDispatch implements SubscriberInterface
             // Klarna PayNow
             if ($session->offsetGet('mopt_klarna_client_token')) {
                 unset($session['mopt_klarna_client_token']);
-            }
-        }
-
-/*        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
-            if ($moptPaymentHelper->isPayonePaymentMethod($moptPaymentName)) {
-                if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
-                    $action->redirect(
-                        array(
-                            'controller' => 'checkout',
-                            'action' => 'shippingPayment',
-                        )
-                    );
-                }
-            }
-        }
-*/
-        if (($controllerName == 'checkout' && $request->getActionName() == 'confirm')) {
-            if (isset(Shopware()->Session()->moptPaydirektExpressWorkerId) && $moptPaymentHelper->isPayonePaydirektExpress($moptPaymentName)) {
-                if ($session->moptBasketChanged || $session->moptFormSubmitted !== true) {
-                    $action->redirect(
-                        array(
-                            'controller' => 'checkout',
-                            'action' => 'cart',
-                        )
-                    );
-                }
             }
         }
 
@@ -356,7 +323,7 @@ class FrontendPostDispatch implements SubscriberInterface
             }
         }
 
-        if (($controllerName == 'checkout' && $request->getActionName() == 'cart')) {
+        if ($controllerName == 'checkout' && $request->getActionName() == 'cart' ) {
             $this->redirectExpressPaymentsOnBasketChange($moptPaymentName, $view);
             $this->redirectInstallmentPaymentsOnBasketChange($moptPaymentName, $view);
         }
@@ -979,7 +946,7 @@ class FrontendPostDispatch implements SubscriberInterface
     protected function  redirectInstallmentPaymentsOnBasketChange($paymentName, $view) {
         $session = Shopware()->Session();
         $cleanedPaymentName = preg_replace('/_[0-9]*$/', '', $paymentName);
-        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_INSTALLMENTS) && $session->moptBasketChanged) {
+        if (in_array( $cleanedPaymentName,\Mopt_PayoneConfig::PAYMENTS_INSTALLMENTS) && $session->moptBasketChanged === true) {
             $this->unsetInstallmentPaymentSessionVars();
             $redirectnotice =                     Shopware()->Snippets()->getNamespace('frontend/MoptPaymentPayone/errorMessages')
                 ->get('installmentsBasketChanged',"<div style='text-align: center'><b>Ratenzahlung<br>Sie haben die Zusammenstellung Ihres Warenkobs geändert.<br>Bitte rufen Sie Ihre aktuellen Ratenzahlungskonditionen ab und wählen Sie den gewünschten Zahlplan aus.<br></b></div>");

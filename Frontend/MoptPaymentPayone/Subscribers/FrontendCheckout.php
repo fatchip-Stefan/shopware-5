@@ -72,7 +72,7 @@ class FrontendCheckout implements SubscriberInterface
      * only used for some payone payment methods
      *
      * @param \Enlight_Hook_HookArgs $arguments
-     * @return type
+     * @return void
      */
     public function onBasketChange(\Enlight_Hook_HookArgs $arguments)
     {
