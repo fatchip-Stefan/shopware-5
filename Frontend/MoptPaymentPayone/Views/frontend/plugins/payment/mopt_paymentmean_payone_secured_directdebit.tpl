@@ -74,13 +74,14 @@
         </select>
     </div>
     {/if}
+
     <br>
     <input name="moptPaymentData[mopt_payone__payone_secured_directdebit_iban]"
            type="text"
            id="mopt_payone__payone_secured_directdebit_iban"
            {if $moptRequired}required="required" aria-required="true"{/if}
            placeholder="{s name='bankIBAN'}IBAN{/s}{s name="RequiredField" namespace="frontend/register/index"}{/s}"
-           value="{$form_data.mopt_payone__payone_secured_directdebit_iban|escape}"
+           value="{$form_data.mopt_payone_payone_secured_directdebit_iban|escape}"
            data-moptIbanErrorMessage="{s namespace='frontend/MoptPaymentPayone/errorMessages' name="ibanbicFormField"}Dieses Feld darf nur Großbuchstaben und Ziffern enthalten{/s}"
            class="payment--field is--required{if $error_flags.mopt_payone__payone_secured_directdebit_iban} has--error{/if} moptPayoneIbanBic" />
 
