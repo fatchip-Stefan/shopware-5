@@ -402,6 +402,7 @@ class FrontendCheckout implements SubscriberInterface
                 $view->assign('BSPayonePaylaPartnerId', 'e7yeryF2of8X');
                 $view->assign('BSPayoneSecuredToken', $config['merchantId'] . 'e7yeryF2of8X' . ' ' . Shopware()->Session()->get('sessionId'));
             }
+            }
         }
     }
 

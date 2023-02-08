@@ -1168,22 +1168,19 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
             $request->setClearingsubtype($clearingSubType);
         }
 
-        if ($this->moptPayonePaymentHelper->isPayoneSecuredDirectdebit($paymentName) ||
-            $this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName)
-        ) {
+        if ($this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName)) {
             $iban = preg_replace('/\s+/', '',  $payment->getIban());
             $payment->setIban($iban);
             $request->set('bankaccountholder', $payment->getBankaccountholder());
         }
-
-        if ($this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredInvoice($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredDirectdebit($paymentName)) {
+        if ($this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredInvoice($paymentName)) {
             $config['submitBasket'] = true;
         }
 
         if (!$isPaypalRecurringInitialRequest && ($config['submitBasket'] || $clearingType === 'fnc')) {
             // although payolution is clearingtype fnc respect submitBasket setting in Backend
             if (!$config['submitBasket'] && ($this->moptPayonePaymentHelper->isPayonePayolutionDebitNote($paymentName) || $this->moptPayonePaymentHelper->isPayonePayolutionInvoice($paymentName)
-                    || $this->moptPayonePaymentHelper->isPayoneSecuredInvoice($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredDirectdebit($paymentName)
+                    || $this->moptPayonePaymentHelper->isPayoneSecuredInvoice($paymentName) || $this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName)
                 )) {
                 // do nothing
             } else {
@@ -1227,8 +1224,7 @@ class Shopware_Controllers_Frontend_MoptPaymentPayone extends Shopware_Controlle
         if ($this->moptPayonePaymentHelper->isPayoneSafeInvoice($paymentName) ||
             $this->moptPayonePaymentHelper->isPayoneInvoice($paymentName) ||
             $this->moptPayonePaymentHelper->isPayoneSecuredInvoice($paymentName) ||
-            $this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName) ||
-            $this->moptPayonePaymentHelper->isPayoneSecuredDirectdebit($paymentName)
+            $this->moptPayonePaymentHelper->isPayoneSecuredInstallments($paymentName)
         ) {
             if (!$personalData->getCompany()) {
                 $request->setBusinessrelation(Payone_Api_Enum_BusinessrelationType::B2C);

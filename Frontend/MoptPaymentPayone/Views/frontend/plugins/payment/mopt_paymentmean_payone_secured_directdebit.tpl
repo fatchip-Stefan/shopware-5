@@ -74,7 +74,6 @@
         </select>
     </div>
     {/if}
-
     <br>
     <input name="moptPaymentData[mopt_payone__payone_secured_directdebit_iban]"
            type="text"
