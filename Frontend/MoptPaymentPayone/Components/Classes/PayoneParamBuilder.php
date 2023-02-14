@@ -1246,42 +1246,10 @@ class Mopt_PayoneParamBuilder
         $payment = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_PayoneSecured($params);
         $paydata = new Payone_Api_Request_Parameter_Paydata_Paydata();
         $paydata->addItem(new Payone_Api_Request_Parameter_Paydata_DataItem(
-            array('key' => 'device_token', 'data' => $paymentData['mopt_payone__payone_secured_directdebit_token'])
-        ));
-        $payment->setPaydata($paydata);
-        $payment->setIban($paymentData['mopt_payone__payone_secured_directdebit_iban']);
-        $payment->setTelephonenumber($userData['billingaddress']['phone']);
-        $payment->setBankaccountholder($userData['billingaddress']['firstname'] . ' ' . $userData['billingaddress']['lastname']);
-        $payment->setBirthday(implode(explode('-', $paymentData['mopt_payone__payone_secured_directdebit_birthdaydate'])));
-        return $payment;
-    }
-
-    /**
-     * create secured dirctdebit object
-     *
-     * @param string $financeType
-     * @param array $paymentData
-     * @return \Payone_Api_Request_Parameter_Authorization_PaymentMethod_PayoneSecured
-     */
-    public function getPaymentPayoneSecuredDirectdebit($financeType, $paymentData)
-    {
-        $params = array();
-        $userData = Shopware()->Modules()->Admin()->sGetUserData();
-        $params['api_version'] = '3.10';
-        $params['birthday'] = implode(explode('-', $userData['additional']['user']['birthday']));
-        if ($params['birthday'] == "00000000") {
-            unset($params['birthday']);
-        }
-
-        $params['financingtype'] = $financeType;
-        $params['company'] = $userData['billingaddress']['company'];
-        $payment = new Payone_Api_Request_Parameter_Authorization_PaymentMethod_PayoneSecured($params);
-        $paydata = new Payone_Api_Request_Parameter_Paydata_Paydata();
-        $paydata->addItem(new Payone_Api_Request_Parameter_Paydata_DataItem(
             array('key' => 'device_token', 'data' => $paymentData['mopt_payone__payone_secured_invoice_token'])
         ));
         $payment->setPaydata($paydata);
-        $payment->setIban($paymentData['mopt_payone_payone_secured_directdebit_iban']);
+        $payment->setIban($paymentData['mopt_payone__payone_secured_directdebit_iban']);
         $payment->setTelephonenumber($userData['billingaddress']['phone']);
         return $payment;
     }

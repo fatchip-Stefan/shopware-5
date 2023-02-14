@@ -969,8 +969,8 @@ class Mopt_PayoneFormHandler
             $paymentData['formData']['mopt_payone__payone_secured_installment_iban'] = $formData['mopt_payone__payone_secured_installment_iban'];
         }
 
-        if ($formData['mopt_payone__payone_secured_installment_birthdaydate'] !== "0000-00-00" && $formData['mopt_payone__secured_istallments_b2bmode'] !== "1") {
-            if (time() < strtotime('+18 years', strtotime($formData['mopt_payone__payone_secured_invstallment_birthdaydate']))) {
+        if ($formData['mopt_payone__payone_secured_installment_birthdaydate'] !== "0000-00-00" && $formData['mopt_payone__secured_installment_b2bmode'] !== "1") {
+            if (time() < strtotime('+18 years', strtotime($formData['mopt_payone__payone_secured_installment_birthdaydate']))) {
                 $paymentData['sErrorFlag']['mopt_payone__payone_secured_installment_birthday'] = true;
                 $paymentData['sErrorFlag']['mopt_payone__payone_secured_installment_birthmonth'] = true;
                 $paymentData['sErrorFlag']['mopt_payone__payone_secured_installment_birthyear'] = true;
