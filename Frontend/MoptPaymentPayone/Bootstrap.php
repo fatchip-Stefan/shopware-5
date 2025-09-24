@@ -70,12 +70,12 @@ class Shopware_Plugins_Frontend_MoptPaymentPayone_Bootstrap extends Shopware_Com
     /**
      * @var Mopt_PayoneInstallHelper|null
      */
-    protected ?Mopt_PayoneInstallHelper $moptPayoneInstallHelper = null;
+    protected $moptPayoneInstallHelper = null;
 
     /**
      * @var Logger|null
      */
-    protected ?Logger $moptPayoneLogger = null;
+    protected $moptPayoneLogger = null;
 
     /**
      * registers the custom plugin models and plugin namespaces
