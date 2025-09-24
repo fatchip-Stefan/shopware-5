@@ -357,7 +357,7 @@ class FrontendCheckout implements SubscriberInterface
 
         }
 
-        if ($templateSuffix === '' && $this->isApplePayActive()) {
+        if ($templateSuffix === '' && $moptPayoneMain->getPaymentHelper()->isApplePayActive()) {
             if (is_null($session->get('moptAllowApplePay'))) {
                 $view->assign('moptCheckApplePaySupport', 'true');
                 $view->extendsTemplate('frontend/checkout/ajax_cart_applepay_devicecheck' . $templateSuffix . '.tpl');
@@ -502,14 +502,6 @@ class FrontendCheckout implements SubscriberInterface
         }
 
         return false;
-    }
-
-    protected function isApplePayActive()
-    {
-        $paymentApplePay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
-            ['name' => 'mopt_payone__ewallet_applepay']
-        );
-        return $paymentApplePay->getActive();
     }
 
     protected function isPayoneSecuredInvoiceActive()

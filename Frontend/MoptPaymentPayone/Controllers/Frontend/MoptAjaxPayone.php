@@ -1198,34 +1198,54 @@ class Shopware_Controllers_Frontend_MoptAjaxPayone extends Enlight_Controller_Ac
         $paymentId = $this->session->moptPaymentId;
         $config = $this->moptPayoneMain->getPayoneConfig($paymentId);
 
-        $params = [
-            'merchantIdentifier' => $config['applepayMerchantId'],
-            'displayName' => Shopware()->Config()->shopname,
-            'initiative' => 'web',
-            'initiativeContext' => Shopware()->Config()->host,
-        ];
-        $encodedParams = json_encode($params);
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $validationUrl);
-            curl_setopt($ch, CURLOPT_SSLCERT, $config['applepayCertificate']);
-            curl_setopt($ch, CURLOPT_SSLCERTPASSWD, $config['applepayPrivateKeyPassword']);
-            curl_setopt($ch, CURLOPT_SSLKEY, $config['applepayPrivateKey']);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $encodedParams);
-            $response = curl_exec($ch);
-            if (curl_errno($ch) > 0) {
-                $data['success'] = false;
-                $data['error'] = curl_error($ch);
-                echo json_encode($data);
-            } else {
-                $data['success'] = true;
-                $data['merchantSession'] = $response;
-                echo json_encode($data);
+        if ($config['applepayNewAuthProcess'] === 0) {
+
+            $params = [
+                'merchantIdentifier' => $config['applepayMerchantId'],
+                'displayName' => Shopware()->Config()->shopname,
+                'initiative' => 'web',
+                'initiativeContext' => Shopware()->Config()->host,
+            ];
+            $encodedParams = json_encode($params);
+            try {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $validationUrl);
+                curl_setopt($ch, CURLOPT_SSLCERT, $config['applepayCertificate']);
+                curl_setopt($ch, CURLOPT_SSLCERTPASSWD, $config['applepayPrivateKeyPassword']);
+                curl_setopt($ch, CURLOPT_SSLKEY, $config['applepayPrivateKey']);
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $encodedParams);
+                $response = curl_exec($ch);
+                if (curl_errno($ch) > 0) {
+                    $data['success'] = false;
+                    $data['error'] = curl_error($ch);
+                    echo json_encode($data);
+                } else {
+                    $data['success'] = true;
+                    $data['merchantSession'] = $response;
+                    echo json_encode($data);
+                }
+                curl_close($ch);
+            } catch (\Exception $e) {
             }
-            curl_close($ch);
-        } catch (\Exception $e) {
+        } else {
+            $paramBuilder = $this->moptPayoneMain->getParamBuilder();
+            $personalData = $paramBuilder->getPersonalData(Shopware()->Modules()->Admin()->sGetUserData());
+
+            new PayoneRequest(PayoneEnums::GenericpaymentAction_genericpayment);
+            $params = [
+                'add_paydata[action]' => PayoneEnums::APPLEPAY_INIT_SESSION,
+                'add_paydata[display_name]' => Shopware()->Config()->shopname,
+                'add_paydata[domain_name]' => Shopware()->Config()->host,
+                'wallettype' => PayoneEnums::APPLEPAY_WALLET_TYPE,
+                'clearingtype' => PayoneEnums::WALLET,
+                'lastname' => 'Steftest',
+                'reference' => $paramBuilder->getParamPaymentReference(),
+                'currency' => Shopware()->Container()->get('currency')->getShortName(),
+                'country' => $personalData['country'],
+
+            ];
         }
     }
 

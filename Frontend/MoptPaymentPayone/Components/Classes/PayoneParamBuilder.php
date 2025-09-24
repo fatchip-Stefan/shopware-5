@@ -965,8 +965,8 @@ class Mopt_PayoneParamBuilder
     public function getPaymentApplepay($router, $token)
     {
         $params = [];
-        $params['clearingtype'] = 'wlt';
-        $params['wallettype'] = 'APL';
+        $params['clearingtype'] = PayoneEnums::WALLET;
+        $params['wallettype'] = PayoneEnums::APPLEPAY_WALLET_TYPE;
 
         $params['successurl'] = $router->assemble(array('action' => 'success',
             'forceSecure' => true, 'appendSession' => false));
@@ -981,8 +981,8 @@ class Mopt_PayoneParamBuilder
     public function getPaymentGooglePay($router, $token)
     {
         $params = array();
-        $params['clearingtype'] = 'wlt';
-        $params['wallettype'] = 'GGP';
+        $params['clearingtype'] = PayoneEnums::WALLET;
+        $params['wallettype'] = PayoneEnums::GOOGLEPAY_WALLET_TYPE;
 
         $params['successurl'] = $router->assemble(array('action' => 'success',
             'forceSecure' => true, 'appendSession' => false));
@@ -1207,6 +1207,27 @@ class Mopt_PayoneParamBuilder
     {
         $params = array();
         $params['wallettype'] = 'WCP';
+
+        $params['successurl'] = $this->payonePaymentHelper->assembleTokenizedUrl($router, array('action' => 'success',
+            'forceSecure' => true, 'appendSession' => false));
+        $params['errorurl'] = $router->assemble(array('action' => 'failure',
+            'forceSecure' => true, 'appendSession' => false));
+        $params['backurl'] = $router->assemble(array('action' => 'cancel',
+            'forceSecure' => true, 'appendSession' => false));
+
+        return $params;
+    }
+
+    /**
+     * returns WeChatPay payment data object
+     *
+     * @param type $router
+     * @return $params
+     */
+    public function getPaymentWero($router)
+    {
+        $params = array();
+        $params['wallettype'] = PayoneEnums::WERO_WALLET_TYPE;
 
         $params['successurl'] = $this->payonePaymentHelper->assembleTokenizedUrl($router, array('action' => 'success',
             'forceSecure' => true, 'appendSession' => false));
@@ -1529,7 +1550,7 @@ class Mopt_PayoneParamBuilder
      * @param string $id
      * @return string
      */
-    protected function getCountryFromId($id)
+    public function getCountryFromId($id)
     {
         $sql = 'SELECT `countryiso` FROM s_core_countries WHERE id = ' . $id;
         $country = Shopware()->Db()->fetchOne($sql);

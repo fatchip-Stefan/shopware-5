@@ -136,4 +136,10 @@ class PayoneEnums
     const RPD = 'RPD'; // Ratepay-Direct-Debit
     const AMAZONPAY = 'AMZ';
     const INTERNET = 'internet';
+
+    const APPLEPAY_INIT_SESSION = 'init_applepay_session';
+    const APPLEPAY_WALLET_TYPE = 'APL';
+    const GOOGLEPAY_WALLET_TYPE = 'GGP';
+
+    const WERO_WALLET_TYPE = 'WRO';
 }

@@ -392,6 +392,17 @@ class Mopt_PayonePaymentHelper
     }
 
     /**
+     * check if given payment name is payone sofortueberweisung payment
+     *
+     * @param string $paymentName
+     * @return boolean
+     */
+    public function isPayoneWero($paymentName)
+    {
+        return preg_match('#mopt_payone__ewallet_wero#', $paymentName) ? true : false;
+    }
+
+    /**
      * check if given payment name is payone eps payment
      *
      * @param string $paymentName
@@ -1414,6 +1425,10 @@ class Mopt_PayonePaymentHelper
         if ($this->isPayoneApplepay($paymentShortName)) {
             return 'applepay';
         }
+
+        if ($this->isPayoneWero($paymentShortName)) {
+            return 'wero';
+        }
         return false;
     }
 
@@ -2023,6 +2038,28 @@ class Mopt_PayonePaymentHelper
     }
 
     /**
+     * remove unzer b2b payments from
+     * payment list when user is a company
+     *
+     * @param $payments array
+     * @param $session
+     * @return array
+     */
+    public function filterWeroCountries($payments)
+    {
+        $userData = Shopware()->Modules()->Admin()->sGetUserData();
+        $paramBuilder = Shopware()->Container()->get('MoptPayoneMain')->getParamBuilder();
+        $billingCountry = $paramBuilder->getCountryFromId($userData['billingaddress']['country']['id']);
+        foreach ($payments as $index => $payment) {
+            if ((strpos($payment['name'], 'mopt_payone__ewallet_wero') !== false) && ! in_array($billingCountry, \Mopt_PayoneConfig::WERO_ALLOWED_COUNTRIES)) {
+                unset($payments[$index]);
+            }
+        }
+
+        return $payments;
+    }
+
+    /**
      * updates user attributes
      * @param $userId
      * @param $success
@@ -2036,5 +2073,13 @@ class Mopt_PayonePaymentHelper
         $attributes->setMoptPayoneCreditcardInitialPayment($success);
         Shopware()->Models()->persist($attributes);
         Shopware()->Models()->flush($attributes);
+    }
+
+    public function isApplePayActive()
+    {
+        $paymentApplePay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
+            ['name' => 'mopt_payone__ewallet_applepay']
+        );
+        return $paymentApplePay->getActive();
     }
 }

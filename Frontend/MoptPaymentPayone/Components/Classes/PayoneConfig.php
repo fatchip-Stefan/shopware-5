@@ -188,6 +188,12 @@ class Mopt_PayoneConfig
         'mopt_payone__ewallet_paypal_expressv2',
     ];
 
+    const WERO_ALLOWED_COUNTRIES = [
+        'DE',
+        'FR',
+        'BE'
+    ];
+
   /**
    * return array with configured valid IPs to accept transaction feedback from
    *

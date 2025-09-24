@@ -632,6 +632,11 @@ class MoptPayoneConfig extends ModelEntity
     private $applepayDebug;
 
     /**
+     * @ORM\Column(name="applepay_new_auth_process", type="boolean", precision=0, scale=0, nullable=true, unique=false, options={"default" : 0})
+     */
+    private $applepayNewAuthProcess;
+
+    /**
      * @ORM\Column(name="allow_different_addresses", type="boolean", precision=0, scale=0, nullable=true, unique=false, options={"default" : 0})
      */
     private $allowDifferentAddresses;
@@ -2580,6 +2585,22 @@ class MoptPayoneConfig extends ModelEntity
     public function setApplepayDebug($applepayDebug)
     {
         $this->applepayDebug = $applepayDebug;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getApplepayNewAuthProcess()
+    {
+        return $this->applepayNewAuthProcess;
+    }
+
+    /**
+     * @param $applepayNewAuthProcess
+     */
+    public function setApplepayNewAuthProcess($applepayNewAuthProcess)
+    {
+        $this->applepayNewAuthProcess = $applepayNewAuthProcess;
     }
 
     /**
