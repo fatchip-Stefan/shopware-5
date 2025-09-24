@@ -63,6 +63,7 @@ class Mopt_PayoneConfig
         'mopt_payone__ewallet_paypalv2',
         'mopt_payone__ewallet_paypal_expressv2',
         'mopt_payone__ewallet_googlepay',
+        'mopt_payone__ewallet_wero',
     ];
 
     const PAYMENTS_ADDRESSCHECK_EXCLUDED = [
