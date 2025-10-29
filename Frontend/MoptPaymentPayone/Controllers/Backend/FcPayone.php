@@ -5,7 +5,7 @@ use Doctrine\ORM\Query\Expr\Join;
 use Shopware\Components\CSRFWhitelistAware;
 use Shopware\Models\Order\Order;
 use Shopware\Plugins\Community\Frontend\MoptPaymentPayone\Components\Payone\PayoneRequest;
-
+use Shopware\Plugins\Community\Frontend\MoptPaymentPayone\Components\Payone\PayoneEnums;
 
 require_once 'MoptConfigPayone.php';
 
@@ -62,6 +62,7 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
             'paymentstatusconfigData',
             'amazonpay',
             'applepay',
+            'applepayconfig',
             'ratepay',
             'riskcheck',
             'addresscheck',
@@ -160,6 +161,17 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
             "payonepaymentmethods" => $payonepaymentmethods,
             "data" => $data,
         ));
+    }
+
+    /**
+     * @return void
+     * @throws \Doctrine\ORM\Exception\NotSupported
+     */
+    public function applepayconfigAction()
+    {
+        $data = $this->get('MoptPayoneMain')->getPayoneConfig(0, true);
+        $request = new PayoneRequest(PayoneRequest::GENERIC);
+        $response = $request->request(PayoneRequest::GENERIC,$params);
     }
 
     /**
@@ -1114,6 +1126,12 @@ class Shopware_Controllers_Backend_FcPayone extends Enlight_Controller_Action im
         if ($options['paypalEcsActive'] == "false") {
             $data->setPaypalEcsActive(0);
         }
+        if ($options['applepayNewAuthProcess'] == "true") {
+            $data->setApplepayNewAuthProcess(1);
+        }
+        if ($options['applepayNewAuthProcess'] == "false") {
+            $data->setApplepayNewAuthProcess(0);
+        }
         Shopware()->Models()->flush($data);
 
         return $data;
@@ -1325,5 +1343,18 @@ class Logging
         $log_file_default = '/tmp/logfile.txt';
         $lfile = $this->log_file ? $this->log_file : $log_file_default;
         $this->fp = fopen($lfile, 'a');
+    }
+
+    protected function applepayconfigAction(
+    ) {
+        $params['api_version'] = '3.10';
+        $request = new PayoneRequest(PayoneEnums::GenericpaymentAction_genericpayment, $params);
+        $params['add_paydata[action]'] = PayoneEnums::AMAZON_GETCONFIGURATION;
+        $params['clearingtype'] = $clearingType;
+        $params['wallettype'] = 'WLP';
+        // set currency here to prevent a mapping exception
+        $params['currency'] = 'EUR';
+        $response = $request->request(PayoneEnums::GenericpaymentAction_genericpayment, $params);
+        return $response;
     }
 }

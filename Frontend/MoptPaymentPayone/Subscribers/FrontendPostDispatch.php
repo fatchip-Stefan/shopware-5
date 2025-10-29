@@ -263,10 +263,10 @@ class FrontendPostDispatch implements SubscriberInterface
         if ($controllerName == 'checkout' && $request->getActionName() === 'confirm' && in_array($moptPaymentName, \Mopt_PayoneConfig::PAYMENTS_ALL)) {
             $session->offsetSet('moptFormSubmitted', false);
         }
+        $userData = Shopware()->Modules()->Admin()->sGetUserData();
 
         if ($controllerName == 'checkout' && $request->getActionName() == 'confirm' && $moptPaymentName === 'mopt_payone__ewallet_applepay') {
                 $moptPayoneHelper = $this->container->get('MoptPayoneMain')->getInstance()->getHelper();
-                $userData = Shopware()->Modules()->Admin()->sGetUserData();
                 $debug = $moptPayoneData['moptApplepayConfig']['applepayDebug'] === true ? 1 : 0;
                 $view->assign('mopt_applepay_country',  $moptPayoneHelper->getCountryIsoFromId($userData['billingaddress']['countryID']));
                 $view->assign('mopt_applepay_currency', Shopware()->Container()->get('currency')->getShortName());
@@ -280,7 +280,6 @@ class FrontendPostDispatch implements SubscriberInterface
         if ($controllerName == 'checkout' && $request->getActionName() == 'confirm' && $moptPaymentName === 'mopt_payone__ewallet_googlepay') {
             $moptPayoneMain = $this->container->get('MoptPayoneMain')->getInstance();
             $config = $moptPayoneMain->getPayoneConfig($paymentId);
-            $userData = Shopware()->Modules()->Admin()->sGetUserData();
             $displayItems = $this->getGooglePayDisplayItems($userData);
             $supportedNetworks = $this->getSupportedNetworks($config);
             $shop = Shopware()->Shop();

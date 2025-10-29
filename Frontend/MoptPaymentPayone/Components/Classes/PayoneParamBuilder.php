@@ -965,8 +965,8 @@ class Mopt_PayoneParamBuilder
     public function getPaymentApplepay($router, $token)
     {
         $params = [];
-        $params['clearingtype'] = 'wlt';
-        $params['wallettype'] = 'APL';
+        $params['clearingtype'] = PayoneEnums::WALLET;
+        $params['wallettype'] = PayoneEnums::APPLEPAY_WALLET_TYPE;
 
         $params['successurl'] = $router->assemble(array('action' => 'success',
             'forceSecure' => true, 'appendSession' => false));
@@ -981,8 +981,8 @@ class Mopt_PayoneParamBuilder
     public function getPaymentGooglePay($router, $token)
     {
         $params = array();
-        $params['clearingtype'] = 'wlt';
-        $params['wallettype'] = 'GGP';
+        $params['clearingtype'] = PayoneEnums::WALLET;
+        $params['wallettype'] = PayoneEnums::GOOGLEPAY_WALLET_TYPE;
 
         $params['successurl'] = $router->assemble(array('action' => 'success',
             'forceSecure' => true, 'appendSession' => false));

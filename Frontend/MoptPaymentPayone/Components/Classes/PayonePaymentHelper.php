@@ -2037,4 +2037,12 @@ class Mopt_PayonePaymentHelper
         Shopware()->Models()->persist($attributes);
         Shopware()->Models()->flush($attributes);
     }
+
+    public function isApplePayActive()
+    {
+        $paymentApplePay = Shopware()->Models()->getRepository('Shopware\Models\Payment\Payment')->findOneBy(
+            ['name' => 'mopt_payone__ewallet_applepay']
+        );
+        return $paymentApplePay->getActive();
+    }
 }

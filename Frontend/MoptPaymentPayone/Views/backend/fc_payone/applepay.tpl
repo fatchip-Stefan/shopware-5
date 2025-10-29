@@ -44,6 +44,9 @@
 
                 {include file='backend/fc_payone/include/input_text.tpl' id='applepayPrivateKeyPassword' label="{s name="fieldlabel/applepayPrivateKeyPassword"}Apple Pay Private Key Passwort{/s}" pattern='^[_ .+-?,:;"!@#$%^&*ÄÖÜäöüa-zA-Z0-9]*' content="{s name="fieldlabelhelp/applepayPrivateKeyPassword"}Kann auch dann gesetzt werden, wenn der Key unverschlüsselt ist{/s}"}
                 {include file='backend/fc_payone/include/input_checkbox.tpl' id='applepayDebug' label="{s name="fieldlabel/applepayDebug"}Apple Pay Debug{/s}" pattern="^[0-9]*" content="{s name="fieldlabelhelp/applepayDebug"}Zeigt im Frontend Debugging Informationen an{/s}"}
+                {include file='backend/fc_payone/include/input_checkbox.tpl' id='applepayNewAuthProcess' label="{s name="fieldlabel/applepayNewAuthProcess"}Nutze neuen Authorisierungsprozess für ApplePay{/s}" pattern="^[0-9]*" content="{s name="fieldlabelhelp/applepayNewAuthProcess"}TODO{/s}"}
+                <button id="applePay" type="button"
+                        class="btn-payone btn">{s name="fieldlabel/downloadConfig"}Konfiguration abrufen{/s}</button>
                 <button type="submit" class="btn-payone btn ">{s name="global-form/button"}Speichern{/s}</button>
             </form>
         </div>
@@ -54,4 +57,17 @@
 <script type="text/javascript">
     {include file='backend/fc_payone/include/javascript.tpl.js' form="#applepayform" loadAction="generalconfigdata" saveAction="ajaxSavePayoneConfig"}
 </script>
+    <script type="text/javascript">
+
+        var testurl = "{url controller=FcPayone action=applepayconfig forceSecure}";
+
+        $("#applePay").on('click', function () {
+            $.ajax({
+                url: testurl,
+                type: 'get',
+                dataType: 'json',
+
+            });
+        });
+    </script>
 {/block}

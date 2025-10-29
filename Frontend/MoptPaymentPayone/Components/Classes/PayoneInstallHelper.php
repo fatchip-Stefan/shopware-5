@@ -1791,7 +1791,7 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
     public function checkAndAddApplepayConfig()
     {
         $textColumns = ['applepay_merchant_id', 'applepay_certificate', 'applepay_private_key', 'applepay_private_key_password'];
-        $tinyIntColumns = ['applepay_visa', 'applepay_mastercard', 'applepay_girocard', 'applepay_amex', 'applepay_discover', 'applepay_debug'];
+        $tinyIntColumns = ['applepay_visa', 'applepay_mastercard', 'applepay_girocard', 'applepay_amex', 'applepay_discover', 'applepay_debug', 'applepay_new_auth_process'];
         $db = Shopware()->Db();
         $dbConfig = $db->getConfig();
 
@@ -1822,6 +1822,15 @@ Zahlungsversuch vorgenommen, und Sie erhalten eine Bestätigungsemail.\r\n\r\n
                         ADD COLUMN `$column` TINYINT(1) NULL DEFAULT '0';";
                 $db->exec($sql);
             }
+        }
+
+        // preserve 'applepay_new_auth_process' when ApplePay is already in use, otherwise set to 1
+        /** @var  $moptPayonePaymentHelper Mopt_PayonePaymentHelper */
+        $payoneMain = new Mopt_PayoneMain();
+        $moptPayonePaymentHelper = $payoneMain->getInstance()->getPaymentHelper();;
+        if (!$moptPayonePaymentHelper->isApplePayActive()) {
+            $sql = "UPDATE `s_plugin_mopt_payone_config` SET applepay_new_auth_process = 1;";
+            $db->exec($sql);
         }
     }
 

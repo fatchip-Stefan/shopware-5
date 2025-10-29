@@ -73,7 +73,7 @@
                     dataType: 'json',
                     type: 'POST',
                     data: {
-                        'validationUrl': validationUrl
+                        'validationUrl': '{url controller="MoptAjaxPayone" action="createApplePaySession" forceSecure}'
                     },
                     success: function (response) {
                         parsed = JSON.parse(response.merchantSession);
