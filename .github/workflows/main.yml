@@ -28,7 +28,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Install PHP
-      uses: shivammathur/setup-php@v2
+      uses: shivammathur/setup-php@2.37.1
       with:
         php-version: ${{ matrix.php-versions }}
         extensions: mbstring, xdebug, curl, dom, fileinfo, gd, iconv, intl, json, xml, pdo, phar, zip
@@ -88,7 +88,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Install PHP
-      uses: shivammathur/setup-php@v2
+      uses: shivammathur/setup-php@2.37.1
       with:
         php-version: ${{ matrix.php-versions }}
         extensions: ctype, curl, dom, hash, iconv, gd, json, mbstring, openssl, session, simplexml, xml, zip, zlib, pdo, fileinfo
